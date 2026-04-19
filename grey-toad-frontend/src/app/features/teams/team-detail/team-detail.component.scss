@@ -1,0 +1,192 @@
+.page { max-width: 800px; }
+
+.back-btn {
+  display: flex; align-items: center;
+  color: var(--text-muted);
+  transition: color var(--transition);
+  &:hover { color: var(--text-primary); }
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.tab {
+  background: transparent; border: none;
+  padding: 10px 16px;
+  font-family: var(--font); font-size: 13px; font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all var(--transition);
+  &:hover { color: var(--text-primary); }
+  &.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+}
+
+.tab-actions { margin-bottom: 16px; }
+.create-form { margin-bottom: 16px; }
+.form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.form-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.members-list { display: flex; flex-direction: column; gap: 8px; }
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+.user-trigger {
+  position: relative;
+  flex-shrink: 0;
+
+  // Invisible bridge fills the gap so hover doesn't drop when moving to the card
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    height: 10px;
+  }
+}
+
+.avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+.avatar-sm {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #3a3a3a, #5a5a5a);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--text-secondary);
+}
+.status-dot {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+}
+
+.user-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 240px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 10px);
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.user-trigger:hover .user-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.popover-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.popover-avatar {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #3a3a3a, #5a5a5a);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.popover-info {
+  display: flex; flex-direction: column; gap: 2px; overflow: hidden;
+}
+.popover-name {
+  font-weight: 600; font-size: 14px; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.popover-email {
+  font-size: 11px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.popover-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.popover-status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+
+.popover-msg-btn {
+  display: flex; align-items: center; gap: 6px; justify-content: center;
+  width: 100%;
+  padding: 7px 12px;
+  background: var(--accent, #5a8aaa);
+  color: #fff;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 12px; font-weight: 500;
+  text-decoration: none;
+  transition: opacity var(--transition);
+  &:hover { opacity: 0.85; }
+}
+
+.member-name { font-weight: 500; }
+.ml-auto { margin-left: auto; }
+.member-actions { display: flex; align-items: center; gap: 8px; }
+
+.role-chip {
+  font-size: 10px; font-weight: 600; padding: 2px 7px;
+  border-radius: 10px; letter-spacing: 0.04em;
+  background: var(--bg-tertiary); color: var(--text-muted); border: 1px solid var(--border);
+  &.role-leader { background: rgba(74,154,106,0.12); color: #4a9a6a; border-color: #4a9a6a40; }
+  &.role-admin  { background: rgba(90,138,170,0.12); color: #5a8aaa; border-color: #5a8aaa40; }
+}
+
+.channels-list { display: flex; flex-direction: column; gap: 8px; }
+.channel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all var(--transition);
+  &:hover { border-color: var(--border-hover); background: var(--bg-hover); }
+}
+.channel-hash { color: var(--text-muted); font-weight: 600; }
+.channel-name { font-weight: 500; flex: 1; }
+
+@media (max-width: 768px) {
+  .member-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .member-actions {
+    width: 100%;
+    margin-left: 0 !important;
+    justify-content: flex-end;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+}

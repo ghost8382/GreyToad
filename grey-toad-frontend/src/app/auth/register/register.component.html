@@ -1,0 +1,72 @@
+<div class="auth-page">
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <div class="auth-wrapper">
+    <div class="auth-header">
+      <h1 class="brand">Grey Toad</h1>
+      <div class="brand-line"></div>
+    </div>
+
+    <div class="auth-card">
+      <h2>Create account</h2>
+      <p class="subtitle">Join your team on Grey Toad</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input
+            formControlName="username"
+            type="text"
+            class="form-input"
+            [class.error]="form.get('username')?.invalid && form.get('username')?.touched"
+            placeholder="yourname"
+          />
+          <span class="error-msg" *ngIf="form.get('username')?.invalid && form.get('username')?.touched">
+            Username is required
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input
+            formControlName="email"
+            type="email"
+            class="form-input"
+            [class.error]="form.get('email')?.invalid && form.get('email')?.touched"
+            placeholder="your@email.com"
+          />
+          <span class="error-msg" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">
+            Enter a valid email
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input
+            formControlName="password"
+            type="password"
+            class="form-input"
+            [class.error]="form.get('password')?.invalid && form.get('password')?.touched"
+            placeholder="Min. 6 characters"
+          />
+          <span class="error-msg" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
+            Password must be at least 6 characters
+          </span>
+        </div>
+
+        <div class="error-msg global-error" *ngIf="error">{{ error }}</div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" [disabled]="loading">
+          <span class="spinner" *ngIf="loading"></span>
+          <span>{{ loading ? '' : 'Create Account' }}</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account?
+        <a routerLink="/auth/login">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>

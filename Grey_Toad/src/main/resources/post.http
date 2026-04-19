@@ -1,0 +1,118 @@
+### REGISTER
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "username": "Jedrzej",
+  "email": "Jedrzej@test.com",
+  "password": "1234"
+}
+
+### LOGIN
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "jakub@test.com",
+  "password": "1234"
+}
+
+### 👇 WSTAW TOKEN (BEZ "Bearer")
+@token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqYWt1YkB0ZXN0LmNvbSIsImlhdCI6MTc3NjAwMzI1NSwiZXhwIjoxNzc2MDA2ODU1fQ.hT8pzukDcVZgDfEvmNuP6WghdjBHnJfa1V4htTWHrSY
+
+### 👇 USER ID (wklej z /me)
+@userId = f7c5db34-29b0-4602-a27a-daadf0f246f9
+
+### GET ME
+GET http://localhost:8080/users/me
+Authorization: Bearer {{token}}
+
+### GET USERS
+GET http://localhost:8080/users
+Authorization: Bearer {{token}}
+
+### CREATE TEAM
+POST http://localhost:8080/teams
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Dev Team",
+  "ownerId": "{{userId}}"
+}
+
+### 👇 WSTAW TEAM ID
+@teamId = 6aa91f70-d5d4-4ca2-9716-c855d54a2ee7
+
+### GET TEAMS
+GET http://localhost:8080/teams
+Authorization: Bearer {{token}}
+
+### CREATE CHANNEL
+POST http://localhost:8080/channels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "general",
+  "teamId": "{{teamId}}"
+}
+
+### 👇 WSTAW CHANNEL ID
+@channelId = CHANNEL_ID
+
+
+### GET CHANNELS
+GET http://localhost:8080/channels/team/{{teamId}}
+Authorization: Bearer {{token}}
+
+### SEND MESSAGE (REST)
+POST http://localhost:8080/channels/{{channelId}}/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "hej 🔥",
+  "senderId": "{{userId}}"
+}
+
+### GET MESSAGES
+GET http://localhost:8080/channels/{{channelId}}/messages
+Authorization: Bearer {{token}}
+
+### CREATE TASK
+POST http://localhost:8080/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Task 1",
+  "description": "Zrób coś",
+  "projectId": "PROJECT_ID"
+}
+
+### GET TASKS
+GET http://localhost:8080/tasks/project/PROJECT_ID
+Authorization: Bearer {{token}}
+
+### CHANGE TASK STATUS
+PATCH http://localhost:8080/tasks/TASK_ID/status?status=IN_PROGRESS
+Authorization: Bearer {{token}}
+
+### ASSIGN TASK
+PATCH http://localhost:8080/tasks/TASK_ID/assign?userId={{userId}}
+Authorization: Bearer {{token}}
+
+### ADD COMMENT
+POST http://localhost:8080/tasks/TASK_ID/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "to trzeba poprawić",
+  "authorId": "{{userId}}"
+}
+
+### GET COMMENTS
+GET http://localhost:8080/tasks/TASK_ID/comments
+Authorization: Bearer {{token}}

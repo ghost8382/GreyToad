@@ -1,0 +1,59 @@
+<div class="page fade-in">
+  <div class="page-header">
+    <div>
+      <h2>Profile</h2>
+      <p class="text-muted text-sm">Manage your personal settings</p>
+    </div>
+  </div>
+
+  <div class="profile-layout" *ngIf="user">
+    <!-- Identity card -->
+    <div class="card identity-card">
+      <div class="identity-avatar">{{ getInitials(user.username) }}</div>
+      <div class="identity-name">{{ user.username }}</div>
+      <div class="identity-email text-muted">{{ user.email }}</div>
+      <div class="role-badge" [class]="'role-' + user.role.toLowerCase()">{{ roleLabel }}</div>
+      <div class="identity-status" *ngIf="user.status">
+        <span class="status-dot-sm" [style.background]="getStatusInfo(user.status).color"></span>
+        {{ getStatusInfo(user.status).label }}
+      </div>
+      <div class="identity-quote text-sm text-muted" *ngIf="user.quote">"{{ user.quote }}"</div>
+    </div>
+
+    <!-- Edit form -->
+    <div class="card edit-card">
+      <h3>Edit Profile</h3>
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-group">
+          <label class="form-label">Quote / Motto</label>
+          <textarea formControlName="quote" class="form-input" rows="2"
+            placeholder="Share something about yourself..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <div class="status-grid">
+            <button
+              *ngFor="let s of statuses"
+              type="button"
+              class="status-btn"
+              [class.active]="form.value.status === s.value"
+              (click)="form.patchValue({ status: s.value })"
+            >
+              <span class="status-dot-sm" [style.background]="s.color"></span>
+              {{ s.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <span class="saved-msg text-sm" *ngIf="saved">Saved!</span>
+          <button type="submit" class="btn btn-primary" [disabled]="saving">
+            <span class="spinner" *ngIf="saving"></span>
+            {{ saving ? '' : 'Save Changes' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

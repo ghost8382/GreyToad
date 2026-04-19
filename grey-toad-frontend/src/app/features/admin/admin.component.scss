@@ -1,0 +1,161 @@
+.page { max-width: 800px; }
+.create-form { margin-bottom: 24px; h3 { margin-bottom: 16px; } }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.users-list { display: flex; flex-direction: column; gap: 8px; }
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+.user-trigger {
+  position: relative;
+  flex-shrink: 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    height: 10px;
+  }
+}
+
+.avatar-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #3a3a3a, #5a5a5a);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.status-dot {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+}
+
+.user-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 240px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 10px);
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.user-trigger:hover .user-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.popover-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.popover-avatar {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #3a3a3a, #5a5a5a);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.popover-info {
+  display: flex; flex-direction: column; gap: 2px; overflow: hidden;
+}
+.popover-name {
+  font-weight: 600; font-size: 14px; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.popover-email {
+  font-size: 11px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.popover-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.popover-status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.popover-msg-btn {
+  display: flex; align-items: center; gap: 6px; justify-content: center;
+  width: 100%;
+  padding: 7px 12px;
+  background: var(--accent, #5a8aaa);
+  color: #fff;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 12px; font-weight: 500;
+  text-decoration: none;
+  transition: opacity var(--transition);
+  &:hover { opacity: 0.85; }
+}
+
+.user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.user-name { font-weight: 500; font-size: 14px; }
+.user-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.role-chip {
+  font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 12px;
+  background: var(--bg-tertiary); color: var(--text-muted); border: 1px solid var(--border);
+  white-space: nowrap;
+
+  &.role-admin  { background: rgba(90,138,170,0.15); color: #5a8aaa; border-color: rgba(90,138,170,0.3); }
+  &.role-leader { background: rgba(74,154,106,0.12); color: #4a9a6a; border-color: rgba(74,154,106,0.25); }
+}
+
+.role-select {
+  font-family: var(--font);
+  font-size: 11px; font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition);
+  &:hover { border-color: var(--border-hover); }
+  &:focus { border-color: var(--border-focus); }
+}
+
+@media (max-width: 768px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .user-row { flex-wrap: wrap; }
+}

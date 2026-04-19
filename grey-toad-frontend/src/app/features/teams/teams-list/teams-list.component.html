@@ -1,0 +1,93 @@
+<div class="page fade-in">
+  <div class="page-header">
+    <div>
+      <h2>Teams</h2>
+      <p class="text-muted text-sm">Teams assigned to projects</p>
+    </div>
+    <button class="btn btn-primary" *ngIf="isAdminOrLeader" (click)="showForm = !showForm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Team
+    </button>
+  </div>
+
+  <!-- Create form (admin only) -->
+  <div class="create-form card" *ngIf="showForm && isAdminOrLeader">
+    <h3>Create new team</h3>
+    <form [formGroup]="form" (ngSubmit)="create()">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Team name *</label>
+          <input formControlName="name" type="text" class="form-input" placeholder="e.g. Support Squad A" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Project *</label>
+          <select formControlName="projectId" class="form-input">
+            <option value="">Select project...</option>
+            <option *ngFor="let p of projects" [value]="p.id">{{ p.name }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" (click)="showForm=false">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving || form.invalid">
+          <span class="spinner" *ngIf="saving"></span>
+          {{ saving ? '' : 'Create Team' }}
+        </button>
+      </div>
+      <div class="error-msg" *ngIf="error">{{ error }}</div>
+    </form>
+  </div>
+
+  <!-- Project selector (admin/leader only) -->
+  <div class="project-tabs" *ngIf="!isUserRole">
+    <button
+      class="proj-tab"
+      [class.active]="selectedProjectId === ''"
+      (click)="selectedProjectId=''; teams=[]"
+    >All</button>
+    <button
+      *ngFor="let p of projects"
+      class="proj-tab"
+      [class.active]="selectedProjectId === p.id"
+      (click)="selectProject(p.id)"
+    >{{ p.name }}</button>
+  </div>
+
+  <div class="spinner" *ngIf="loading"></div>
+
+  <!-- Admin/leader: prompt to pick project -->
+  <div class="empty-state" *ngIf="!isUserRole && !loading && !selectedProjectId">
+    <div class="empty-icon">👥</div>
+    <p>Select a project to view its teams</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!isUserRole && !loading && selectedProjectId && teams.length === 0">
+    <div class="empty-icon">👥</div>
+    <p *ngIf="isAdmin">No teams in this project. Create the first one!</p>
+    <p *ngIf="!isAdmin">No teams in this project yet.</p>
+  </div>
+
+  <!-- User: no teams -->
+  <div class="empty-state" *ngIf="isUserRole && !loading && teams.length === 0">
+    <div class="empty-icon">👥</div>
+    <p>You haven't been assigned to any team yet.</p>
+  </div>
+
+  <div class="teams-grid" *ngIf="!loading && teams.length > 0 && (!isUserRole ? selectedProjectId : true)">
+    <a
+      *ngFor="let team of teams"
+      [routerLink]="['/teams', team.id]"
+      class="team-card"
+    >
+      <div class="team-card-header">
+        <div class="team-avatar">{{ team.name.slice(0,2).toUpperCase() }}</div>
+        <button class="btn btn-danger btn-sm delete-btn" *ngIf="isAdmin" (click)="delete(team.id, $event)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </div>
+      <div class="team-name">{{ team.name }}</div>
+      <div class="team-project text-sm text-muted">{{ getProjectName(team.projectId ?? '') }}</div>
+      <div class="team-meta text-sm text-muted">View members →</div>
+    </a>
+  </div>
+</div>

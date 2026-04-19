@@ -1,0 +1,131 @@
+<div class="chat-layout" [class.channels-open]="showChannelSidebar">
+  <!-- Channel sidebar -->
+  <div class="channel-sidebar">
+    <div class="sidebar-header">
+      <div style="display:flex; align-items:center; justify-content:space-between">
+        <h4>Channels</h4>
+        <button class="close-ch-btn" (click)="showChannelSidebar = false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Team selector -->
+    <div class="team-selector">
+      <button
+        *ngFor="let t of teams"
+        class="team-tab"
+        [class.active]="selectedTeam === t.id"
+        (click)="selectTeam(t.id)"
+        [title]="t.name"
+      >
+        {{ t.name.slice(0,2).toUpperCase() }}
+      </button>
+    </div>
+
+    <div class="channels-list">
+      <div class="empty-hint" *ngIf="!selectedTeam">← Select a team</div>
+      <div class="empty-hint" *ngIf="selectedTeam && channels.length === 0">No channels yet</div>
+
+      <button
+        *ngFor="let ch of channels"
+        class="channel-btn"
+        [class.active]="selectedChannel?.id === ch.id"
+        (click)="openChannel(ch)"
+      >
+        <span class="hash">#</span>
+        <span class="ch-name">{{ ch.name }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div class="chat-area">
+    <!-- No channel selected -->
+    <div class="no-channel" *ngIf="!selectedChannel">
+      <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <p>Select a channel to start chatting</p>
+      </div>
+    </div>
+
+    <ng-container *ngIf="selectedChannel">
+      <!-- Header -->
+      <div class="chat-header">
+        <div style="display:flex; align-items:center; gap:10px">
+          <button class="open-ch-btn" (click)="showChannelSidebar = true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <span class="chat-channel-name"># {{ selectedChannel.name }}</span>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages" #msgList>
+        <div class="spinner center-spinner" *ngIf="loading"></div>
+
+        <div class="empty-state" *ngIf="!loading && messages.length === 0">
+          <div class="empty-icon">👋</div>
+          <p>This is the beginning of <strong>#{{ selectedChannel.name }}</strong></p>
+        </div>
+
+        <ng-container *ngFor="let msg of messages; let i = index">
+          <!-- Date separator -->
+          <div class="date-sep" *ngIf="shouldShowDate(i)">
+            <span>{{ formatDay(msg.createdAt) }}</span>
+          </div>
+
+          <div class="message" [class.own]="isOwnMessage(msg)">
+            <div class="user-trigger" *ngIf="!isOwnMessage(msg)">
+              <div class="msg-avatar">
+                {{ getUserName(msg.senderId).slice(0,2).toUpperCase() }}
+              </div>
+              <div class="user-popover">
+                <div class="popover-header">
+                  <div class="popover-avatar">{{ getUserName(msg.senderId).slice(0,2).toUpperCase() }}</div>
+                  <div class="popover-info">
+                    <span class="popover-name">{{ getUserName(msg.senderId) }}</span>
+                    <span class="popover-email">{{ getUserEmail(msg.senderId) }}</span>
+                  </div>
+                </div>
+                <div class="popover-status">
+                  <span class="popover-status-dot" [style.background]="getUserStatusColor(msg.senderId)"></span>
+                  {{ getUserStatusLabel(msg.senderId) }}
+                </div>
+                <a [routerLink]="['/messages']" [queryParams]="{userId: msg.senderId}" class="popover-msg-btn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Wyślij wiadomość
+                </a>
+              </div>
+            </div>
+            <div class="msg-body">
+              <div class="msg-meta" *ngIf="!isOwnMessage(msg)">
+                <span class="msg-author">{{ getUserName(msg.senderId) }}</span>
+                <span class="msg-time">{{ formatTime(msg.createdAt) }}</span>
+              </div>
+              <div class="msg-bubble">{{ msg.content }}</div>
+              <div class="msg-time own-time" *ngIf="isOwnMessage(msg)">{{ formatTime(msg.createdAt) }}</div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-area">
+        <div class="input-wrap">
+          <textarea
+            [(ngModel)]="messageText"
+            (keydown)="onKeydown($event)"
+            (input)="autoResize($event)"
+            class="msg-input"
+            [placeholder]="'Message #' + selectedChannel.name"
+          ></textarea>
+          <button class="send-btn" (click)="send()" [disabled]="!messageText.trim()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <p class="input-hint text-sm text-muted">Enter to send · Shift+Enter for new line</p>
+      </div>
+    </ng-container>
+  </div>
+</div>

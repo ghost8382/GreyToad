@@ -1,0 +1,81 @@
+<div class="page fade-in">
+  <div class="page-header">
+    <div>
+      <h2>Projects</h2>
+      <p class="text-muted text-sm">All projects in the workspace</p>
+    </div>
+    <button class="btn btn-primary" *ngIf="isAdmin" (click)="showForm = !showForm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Project
+    </button>
+  </div>
+
+  <!-- Create form (admin only) -->
+  <div class="card create-form" *ngIf="showForm && isAdmin">
+    <h3>Create project</h3>
+    <form [formGroup]="form" (ngSubmit)="create()">
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Project name *</label>
+          <input formControlName="name" type="text" class="form-input" placeholder="e.g. Customer Support Q1" autofocus />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" (click)="showForm=false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving || form.invalid">
+            <span class="spinner" *ngIf="saving"></span>
+            {{ saving ? '' : 'Create' }}
+          </button>
+        </div>
+      </div>
+      <div class="error-msg" *ngIf="error">{{ error }}</div>
+    </form>
+  </div>
+
+  <div class="spinner" *ngIf="loading"></div>
+
+  <div class="empty-state" *ngIf="!loading && projects.length === 0">
+    <div class="empty-icon">📁</div>
+    <p *ngIf="isAdmin">No projects yet. Create the first one!</p>
+    <p *ngIf="!isAdmin">No projects available. Contact your administrator.</p>
+  </div>
+
+  <!-- Projects list -->
+  <div class="projects-list" *ngIf="!loading && projects.length > 0">
+    <div class="project-item" *ngFor="let p of projects">
+      <div class="project-row" (click)="toggleExpand(p.id)">
+        <div class="project-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="project-info">
+          <span class="project-name">{{ p.name }}</span>
+          <span class="project-team-count text-muted text-sm" *ngIf="teamsByProject[p.id]">
+            {{ teamsByProject[p.id].length }} team{{ teamsByProject[p.id].length !== 1 ? 's' : '' }}
+          </span>
+        </div>
+        <div class="project-actions" (click)="$event.stopPropagation()">
+          <button class="btn btn-ghost btn-sm" (click)="viewTasks(p.id)">Tasks →</button>
+          <button class="btn btn-danger btn-sm" *ngIf="isAdmin" (click)="delete(p.id, $event)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+        <svg class="chevron" [class.open]="expandedProject === p.id" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <!-- Expanded: teams within project -->
+      <div class="project-teams" *ngIf="expandedProject === p.id">
+        <div class="teams-loading text-muted text-sm" *ngIf="!teamsByProject[p.id]">Loading teams…</div>
+
+        <div class="no-teams text-muted text-sm" *ngIf="teamsByProject[p.id]?.length === 0">
+          No teams in this project yet.
+          <a *ngIf="isAdmin" [routerLink]="['/teams']" [queryParams]="{projectId: p.id}" class="link">Add a team →</a>
+        </div>
+
+        <div class="team-row" *ngFor="let t of teamsByProject[p.id]" (click)="goToTeam(t.id)">
+          <div class="team-dot"></div>
+          <span class="team-name">{{ t.name }}</span>
+          <span class="text-muted text-sm">View members →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

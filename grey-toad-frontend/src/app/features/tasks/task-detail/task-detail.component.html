@@ -1,0 +1,189 @@
+<div class="page fade-in">
+  <div class="page-header">
+    <div class="flex items-center gap-12">
+      <a routerLink="/tasks" class="back-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </a>
+      <h2>Task Detail</h2>
+    </div>
+  </div>
+
+  <div class="no-task" *ngIf="!task && !loading">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>Task not found. Navigate here from the tasks list.</p>
+      <a routerLink="/tasks" class="btn btn-primary btn-sm">Back to Tasks</a>
+    </div>
+  </div>
+
+  <div class="task-layout" *ngIf="task">
+    <!-- Main -->
+    <div class="task-main">
+      <div class="card">
+        <div class="task-header">
+          <h3 class="task-title">{{ task.title }}</h3>
+          <span class="badge"
+            [class.badge-todo]="task.status==='TODO'"
+            [class.badge-progress]="task.status==='IN_PROGRESS'"
+            [class.badge-done]="task.status==='DONE'">
+            {{ statusLabel(task.status) }}
+          </span>
+        </div>
+        <p class="task-desc text-muted" *ngIf="task.description">{{ task.description }}</p>
+        <p class="text-muted text-sm" *ngIf="!task.description">No description provided.</p>
+      </div>
+
+      <!-- Comments -->
+      <div class="comments-section">
+        <h4 class="mb-16">Comments ({{ comments.length }})</h4>
+
+        <div class="comments-list">
+          <div class="comment" *ngFor="let c of comments">
+            <div class="comment-avatar">{{ getUserName(c.authorId).slice(0,2).toUpperCase() }}</div>
+            <div class="comment-body">
+              <div class="comment-meta">
+                <span class="comment-author">{{ getUserName(c.authorId) }}</span>
+                <span class="text-muted text-sm">{{ formatDate(c.createdAt) }}</span>
+              </div>
+              <p class="comment-content">{{ c.content }}</p>
+            </div>
+          </div>
+          <div class="empty-state" *ngIf="comments.length === 0">
+            <p>No comments yet. Be the first!</p>
+          </div>
+        </div>
+
+        <!-- Add comment -->
+        <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="comment-form">
+          <textarea
+            formControlName="content"
+            class="form-input"
+            placeholder="Write a comment..."
+            rows="3"
+          ></textarea>
+          <div class="comment-form-footer">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving || commentForm.invalid">
+              <span class="spinner" *ngIf="saving"></span>
+              {{ saving ? '' : 'Post Comment' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="task-sidebar">
+      <!-- Status -->
+      <div class="card sidebar-card">
+        <h4 class="mb-16">Status</h4>
+        <div class="status-options">
+          <button
+            *ngFor="let s of statuses"
+            class="status-btn"
+            [class.active]="task.status === s"
+            (click)="changeStatus(s)"
+          >
+            <span class="status-dot" [class]="'dot-' + s.toLowerCase()"></span>
+            {{ statusLabel(s) }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Priority -->
+      <div class="card sidebar-card">
+        <h4 class="mb-12">Priority</h4>
+        <div class="priority-options">
+          <button *ngFor="let p of ['CRITICAL','HIGH','MEDIUM','LOW']"
+            class="priority-opt" [class.active]="(task.priority || 'MEDIUM') === p"
+            [class]="'priority-opt ' + priorityClass(p) + ((task.priority || 'MEDIUM') === p ? ' active' : '')"
+            [disabled]="!isAdminOrLeader"
+            (click)="changePriority(p)">
+            {{ priorityLabel(p) }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Type -->
+      <div class="card sidebar-card">
+        <h4 class="mb-12">Type</h4>
+        <div class="type-options">
+          <button *ngFor="let t of ['TASK','BUG','FEATURE','STORY']"
+            class="type-opt"
+            [class.active]="(task.type || 'TASK') === t"
+            [disabled]="!isAdminOrLeader"
+            (click)="changeType(t)">
+            <span class="type-icon" [class]="'ti-' + t.toLowerCase()">
+              <svg *ngIf="t==='TASK'"    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <svg *ngIf="t==='BUG'"     width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M6.3 6.3l11.4 11.4M6.3 17.7L17.7 6.3"/></svg>
+              <svg *ngIf="t==='FEATURE'" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg *ngIf="t==='STORY'"   width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </span>
+            {{ typeLabel(t) }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Assignee -->
+      <div class="card sidebar-card">
+        <h4 class="mb-16">Assignee</h4>
+        <div class="assignee-info">
+          <div class="avatar-sm">{{ getUserName(task.assigneeId).slice(0,2).toUpperCase() }}</div>
+          <span>{{ getUserName(task.assigneeId) }}</span>
+        </div>
+        <select class="form-input mt-8" [ngModel]="task.assigneeId" (ngModelChange)="assignTo($event)">
+          <option value="">Unassigned</option>
+          <option *ngFor="let u of users" [value]="u.id">{{ u.username }}</option>
+        </select>
+      </div>
+
+      <!-- Project & Teams -->
+      <div class="card sidebar-card" *ngIf="task.projectName || (task.teamNames && task.teamNames.length > 0)">
+        <h4 class="mb-12">Project & Teams</h4>
+        <div class="meta-row" *ngIf="task.projectName">
+          <span class="meta-label">Project</span>
+          <span class="meta-value">{{ task.projectName }}</span>
+        </div>
+        <div class="meta-row" *ngIf="task.teamNames && task.teamNames.length > 0">
+          <span class="meta-label">Teams</span>
+          <div class="team-chips">
+            <span class="team-chip" *ngFor="let t of task.teamNames">{{ t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLA -->
+      <div class="card sidebar-card" *ngIf="task.slaDeadline">
+        <h4 class="mb-12">SLA</h4>
+        <div class="sla-detail" [class]="slaClass(task)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {{ slaLabel(task) }}
+        </div>
+        <div class="sla-bar-full mt-8">
+          <div class="sla-bar-fill" [class]="slaClass(task)" [style.width.%]="slaBarPercent(task)"></div>
+        </div>
+        <p class="text-muted text-sm mt-8">{{ task.slaDeadline | date:'dd MMM yyyy, HH:mm' }}</p>
+      </div>
+
+      <!-- Deadline -->
+      <div class="card sidebar-card">
+        <div class="sidebar-card-header">
+          <h4>Deadline</h4>
+          <button *ngIf="isAdminOrLeader && !editingDeadline" class="icon-edit-btn" (click)="openDeadline()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
+        <ng-container *ngIf="!editingDeadline">
+          <p class="text-sm" *ngIf="task.deadline">{{ task.deadline | date:'dd MMM yyyy, HH:mm' }}</p>
+          <p class="text-muted text-sm" *ngIf="!task.deadline">Not set</p>
+        </ng-container>
+        <ng-container *ngIf="editingDeadline">
+          <input type="datetime-local" class="form-input mt-8" [(ngModel)]="deadlineValue" />
+          <div class="deadline-actions mt-8">
+            <button class="btn btn-ghost btn-sm" (click)="editingDeadline=false">Cancel</button>
+            <button class="btn btn-primary btn-sm" (click)="saveDeadline()">Save</button>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>

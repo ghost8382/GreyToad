@@ -1,0 +1,22 @@
+# Angular
+grey-toad-frontend/node_modules/
+grey-toad-frontend/dist/
+grey-toad-frontend/.angular/
+
+# Spring Boot
+Grey_Toad/target/
+Grey_Toad/.mvn/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+*.env
+application-local.properties

@@ -1,0 +1,155 @@
+<div class="page fade-in" *ngIf="!loading">
+  <div class="page-header">
+    <div class="flex items-center gap-12">
+      <a routerLink="/teams" class="back-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </a>
+      <div>
+        <h2>{{ team?.name }}</h2>
+        <p class="text-muted text-sm">{{ members.length }} members · {{ channels.length }} channels</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab === 'members'" (click)="activeTab = 'members'">
+      Members ({{ members.length }})
+    </button>
+    <button class="tab" [class.active]="activeTab === 'channels'" (click)="activeTab = 'channels'">
+      Channels ({{ channels.length }})
+    </button>
+  </div>
+
+  <!-- Members tab -->
+  <div *ngIf="activeTab === 'members'">
+    <div class="tab-actions">
+      <button class="btn btn-primary btn-sm" *ngIf="isAdmin || isLeader" (click)="showAddMember = !showAddMember">+ Add Member</button>
+    </div>
+
+    <div class="card create-form" *ngIf="showAddMember">
+      <form [formGroup]="memberForm" (ngSubmit)="addMember()">
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">User</label>
+            <select formControlName="userId" class="form-input">
+              <option value="">Select user...</option>
+              <option *ngFor="let u of allUsers" [value]="u.id">{{ u.username }} ({{ u.email }})</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select formControlName="role" class="form-input">
+              <option value="MEMBER">Member</option>
+              <option value="ADMIN">Admin</option>
+              <option value="OWNER">Owner</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="showAddMember=false">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving">Add</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="members-list">
+      <div class="member-row" *ngFor="let m of members">
+        <div class="user-trigger">
+          <div class="avatar-wrapper">
+            <div class="avatar-sm">{{ getUserName(m.userId).slice(0,2).toUpperCase() }}</div>
+            <span class="status-dot" [style.background]="getUserStatusColor(m.userId)"></span>
+          </div>
+          <div class="user-popover">
+            <div class="popover-header">
+              <div class="popover-avatar">{{ getUserName(m.userId).slice(0,2).toUpperCase() }}</div>
+              <div class="popover-info">
+                <span class="popover-name">{{ getUserName(m.userId) }}</span>
+                <span class="popover-email">{{ getUserEmail(m.userId) }}</span>
+              </div>
+            </div>
+            <div class="popover-status">
+              <span class="popover-status-dot" [style.background]="getUserStatusColor(m.userId)"></span>
+              {{ getUserStatusLabel(m.userId) }}
+            </div>
+            <a [routerLink]="['/messages']" [queryParams]="{userId: m.userId}" class="popover-msg-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Wyślij wiadomość
+            </a>
+          </div>
+        </div>
+        <span class="member-name">{{ getUserName(m.userId) }}</span>
+        <span class="badge" [class.badge-owner]="m.role==='OWNER'" [class.badge-member]="m.role!=='OWNER'">
+          {{ m.role }}
+        </span>
+        <span class="role-chip" [class.role-leader]="getUserRole(m.userId)==='LEADER'" [class.role-admin]="getUserRole(m.userId)==='ADMIN'">
+          {{ getUserRole(m.userId) }}
+        </span>
+        <div class="member-actions ml-auto">
+          <button
+            *ngIf="isAdmin && getUserRole(m.userId) === 'USER'"
+            class="btn btn-ghost btn-sm"
+            title="Ustaw jako Lidera"
+            (click)="setAsLeader(m)"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Lider
+          </button>
+          <button
+            *ngIf="isAdmin && getUserRole(m.userId) === 'LEADER'"
+            class="btn btn-ghost btn-sm"
+            title="Odbierz rolę Lidera"
+            (click)="demoteToWorker(m)"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Worker
+          </button>
+          <button *ngIf="isAdmin" class="btn btn-danger btn-sm" (click)="removeMember(m.id)">Remove</button>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="members.length === 0">
+        <p>No members yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channels tab -->
+  <div *ngIf="activeTab === 'channels'">
+    <div class="tab-actions">
+      <button class="btn btn-primary btn-sm" (click)="showAddChannel = !showAddChannel">+ New Channel</button>
+    </div>
+
+    <div class="card create-form" *ngIf="showAddChannel">
+      <form [formGroup]="channelForm" (ngSubmit)="addChannel()">
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Channel name</label>
+            <input formControlName="name" type="text" class="form-input" placeholder="e.g. general" />
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="showAddChannel=false">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving">Create</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="channels-list">
+      <a
+        *ngFor="let ch of channels"
+        [routerLink]="['/chat']"
+        [queryParams]="{ teamId: ch.teamId, channelId: ch.id }"
+        class="channel-row"
+      >
+        <span class="channel-hash">#</span>
+        <span class="channel-name">{{ ch.name }}</span>
+        <span class="text-muted text-sm">Open →</span>
+      </a>
+      <div class="empty-state" *ngIf="channels.length === 0">
+        <p>No channels yet. Create one!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="spinner" *ngIf="loading"></div>

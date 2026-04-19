@@ -1,0 +1,112 @@
+<div class="dm-layout">
+  <!-- Users list -->
+  <div class="users-panel">
+    <div class="panel-header">
+      <h4>Direct Messages</h4>
+    </div>
+
+    <div class="search-wrap">
+      <input
+        [(ngModel)]="searchQuery"
+        type="text"
+        class="form-input search-input"
+        placeholder="Search by login..."
+      />
+    </div>
+
+    <div class="users-list">
+      <div class="empty-hint" *ngIf="filteredUsers.length === 0">No users found</div>
+
+      <button
+        *ngFor="let u of filteredUsers"
+        class="user-btn"
+        [class.active]="selectedUser?.id === u.id"
+        (click)="openConversation(u)"
+      >
+        <div class="avatar-wrap">
+          <div class="user-avatar">{{ getInitials(u.username) }}</div>
+          <span class="status-dot-sm" [style.background]="getStatusColor(u.status)" [title]="getStatusLabel(u.status)"></span>
+        </div>
+        <div class="user-info">
+          <div class="user-name-row">
+            <div class="user-login">{{ u.username }}</div>
+            <span class="status-label-sm" [style.color]="getStatusColor(u.status)">{{ getStatusLabel(u.status) }}</span>
+          </div>
+          <div class="user-last-msg" *ngIf="getLastMessage(u)">{{ getLastMessage(u) }}</div>
+          <div class="user-email text-muted" *ngIf="!getLastMessage(u)">{{ u.email }}</div>
+        </div>
+        <div class="has-history-dot" *ngIf="hasUnread(u)"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Conversation area -->
+  <div class="conversation">
+    <!-- No user selected -->
+    <div class="no-conv" *ngIf="!selectedUser">
+      <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <p>Select a person to start a conversation</p>
+        <p class="text-sm text-muted">Search by login name on the left</p>
+      </div>
+    </div>
+
+    <ng-container *ngIf="selectedUser">
+      <!-- Header -->
+      <div class="conv-header">
+        <div class="avatar-wrap">
+          <div class="user-avatar">{{ getInitials(selectedUser.username) }}</div>
+          <span class="status-dot-sm" [style.background]="getStatusColor(selectedUser.status)" [title]="getStatusLabel(selectedUser.status)"></span>
+        </div>
+        <div>
+          <div class="conv-name">{{ selectedUser.username }}</div>
+          <div class="conv-status text-sm" [style.color]="getStatusColor(selectedUser.status)">
+            {{ getStatusLabel(selectedUser.status) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages" #msgContainer>
+        <div class="empty-state" *ngIf="loadingConversation">
+          <p>Loading conversation...</p>
+        </div>
+        <div class="empty-state" *ngIf="!loadingConversation && messages.length === 0">
+          <div class="empty-icon">✉️</div>
+          <p>Start a conversation with <strong>{{ selectedUser.username }}</strong></p>
+        </div>
+
+        <ng-container *ngFor="let msg of messages; let i = index">
+          <div class="date-sep" *ngIf="shouldShowDate(i)">
+            <span>{{ formatDay(msg.createdAt) }}</span>
+          </div>
+
+          <div class="message" [class.own]="isOwn(msg)">
+            <div class="msg-avatar" *ngIf="!isOwn(msg)">{{ getInitials(selectedUser.username) }}</div>
+            <div class="msg-body">
+              <div class="msg-bubble">{{ msg.content }}</div>
+              <div class="msg-time">{{ formatTime(msg.createdAt) }}</div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Input -->
+      <div class="input-area">
+        <div class="input-wrap">
+          <textarea
+            [(ngModel)]="messageText"
+            (keydown)="onKeydown($event)"
+            class="msg-input"
+            [placeholder]="'Message ' + selectedUser.username + '...'"
+            rows="1"
+          ></textarea>
+          <button class="send-btn" (click)="send()" [disabled]="!messageText.trim() || !wsReady">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <p class="input-hint text-sm text-muted">Enter to send · Shift+Enter for new line</p>
+      </div>
+    </ng-container>
+  </div>
+</div>

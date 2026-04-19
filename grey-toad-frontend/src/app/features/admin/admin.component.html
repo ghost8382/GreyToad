@@ -1,0 +1,94 @@
+<div class="page fade-in">
+  <div class="page-header">
+    <div>
+      <h2>User Management</h2>
+      <p class="text-muted text-sm">Manage accounts — only administrators can access this panel</p>
+    </div>
+    <button class="btn btn-primary" (click)="showForm = !showForm">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Account
+    </button>
+  </div>
+
+  <!-- Create form -->
+  <div class="card create-form" *ngIf="showForm">
+    <h3>Create account</h3>
+    <form [formGroup]="form" (ngSubmit)="create()">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Username *</label>
+          <input formControlName="username" type="text" class="form-input" placeholder="Jan Kowalski" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input formControlName="email" type="email" class="form-input" placeholder="jan@firma.pl" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input formControlName="password" type="password" class="form-input" placeholder="min. 4 znaki" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role *</label>
+          <select formControlName="role" class="form-input">
+            <option value="USER">Worker</option>
+            <option value="LEADER">Leader</option>
+            <option value="ADMIN">Administrator</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" (click)="showForm=false">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving || form.invalid">
+          <span class="spinner" *ngIf="saving"></span>
+          {{ saving ? '' : 'Create Account' }}
+        </button>
+      </div>
+      <div class="error-msg" *ngIf="error">{{ error }}</div>
+    </form>
+  </div>
+
+  <!-- Users list -->
+  <div class="users-list">
+    <div class="user-row" *ngFor="let u of users">
+      <div class="user-trigger">
+        <div class="avatar-wrapper">
+          <div class="avatar">{{ u.username.slice(0,2).toUpperCase() }}</div>
+          <span class="status-dot" [style.background]="getStatusColor(u.status)"></span>
+        </div>
+        <div class="user-popover">
+          <div class="popover-header">
+            <div class="popover-avatar">{{ u.username.slice(0,2).toUpperCase() }}</div>
+            <div class="popover-info">
+              <span class="popover-name">{{ u.username }}</span>
+              <span class="popover-email">{{ u.email }}</span>
+            </div>
+          </div>
+          <div class="popover-status">
+            <span class="popover-status-dot" [style.background]="getStatusColor(u.status)"></span>
+            {{ getStatusLabel(u.status) }}
+          </div>
+          <a [routerLink]="['/messages']" [queryParams]="{userId: u.id}" class="popover-msg-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Wyślij wiadomość
+          </a>
+        </div>
+      </div>
+      <div class="user-info">
+        <span class="user-name">{{ u.username }}</span>
+        <span class="user-email text-sm text-muted">{{ u.email }}</span>
+      </div>
+      <select class="role-select" [value]="u.role" (change)="changeRole(u.id, $any($event.target).value)">
+        <option value="USER">Worker</option>
+        <option value="LEADER">Leader</option>
+        <option value="ADMIN">Administrator</option>
+      </select>
+      <button class="btn btn-danger btn-sm" (click)="delete(u.id)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+      </button>
+    </div>
+    <div class="empty-state" *ngIf="users.length === 0">
+      <div class="empty-icon">👤</div>
+      <p>No users yet.</p>
+    </div>
+  </div>
+</div>
