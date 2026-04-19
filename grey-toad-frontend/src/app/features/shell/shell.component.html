@@ -40,7 +40,7 @@
 
       <div class="user-info" *ngIf="user" [routerLink]="['/profile']" style="cursor:pointer">
         <div class="avatar-wrapper">
-          <div class="avatar">{{ getInitials(user.username) }}</div>
+          <div class="avatar" [class]="avatarClass(user.username)">{{ getInitials(user.username) }}</div>
           <span class="status-dot-sidebar" [style.background]="getStatusColor(user.status)"></span>
         </div>
         <div class="user-details" *ngIf="!sidebarCollapsed">

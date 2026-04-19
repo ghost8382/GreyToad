@@ -28,6 +28,11 @@ public class TaskController {
         return taskService.create(request, principal.getName());
     }
 
+    @GetMapping("/{taskId}")
+    public TaskResponse getById(@PathVariable UUID taskId) {
+        return taskService.getById(taskId);
+    }
+
     @GetMapping("/project/{projectId}")
     public List<TaskResponse> getByProject(
             @PathVariable UUID projectId,

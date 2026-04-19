@@ -129,7 +129,7 @@
   </div>
 
   <!-- Tasks list -->
-  <div class="tasks-list" *ngIf="!loading && filteredTasks.length > 0">
+  <div class="tasks-list stagger" *ngIf="!loading && filteredTasks.length > 0">
     <a
       *ngFor="let task of filteredTasks"
       [routerLink]="['/tasks', task.id]"

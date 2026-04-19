@@ -65,6 +65,12 @@ export class AdminComponent implements OnInit {
     return map[role] || role;
   }
 
+  avatarClass(name?: string): string {
+    if (!name) return 'av-0';
+    const hash = Array.from(name).reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return 'av-' + (hash % 8);
+  }
+
   getStatusColor(status?: string): string {
     const colors: Record<string, string> = {
       AVAILABLE: '#4a9a6a', BREAK: '#e8a44a', DINNER: '#e87a4a',

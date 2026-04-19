@@ -87,6 +87,12 @@ export class ShellComponent implements OnInit, OnDestroy {
   logout() { this.auth.logout(); }
   getInitials(name?: string) { return name?.slice(0, 2).toUpperCase() || '?'; }
 
+  avatarClass(name?: string): string {
+    if (!name) return 'av-0';
+    const hash = Array.from(name).reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return 'av-' + (hash % 8);
+  }
+
   getStatusColor(status?: string) {
     return USER_STATUSES.find(s => s.value === status)?.color || '#5a5a5a';
   }

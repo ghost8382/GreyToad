@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { TaskService, ProjectService, UserService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ChatWsService } from '../../../core/services/chat-ws.service';
 import { Task, Project, User } from '../../../shared/models';
 
 @Component({
@@ -13,16 +15,18 @@ import { Task, Project, User } from '../../../shared/models';
   styleUrls: ['./tasks-list.component.scss'],
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink]
 })
-export class TasksListComponent implements OnInit {
+export class TasksListComponent implements OnInit, OnDestroy {
   tasks: Task[] = [];
   projects: Project[] = [];
   users: User[] = [];
+
+  private wsSub?: Subscription;
 
   selectedProject = '';
   filterStatus = 'ALL';
   filterPriority = 'ALL';
   showArchived = false;
-  caseSearch = '';
+  caseSearch: number | null = null;
   loading = false;
   showForm = false;
   saving = false;
@@ -49,11 +53,18 @@ export class TasksListComponent implements OnInit {
     private projectService: ProjectService,
     private userService: UserService,
     private auth: AuthService,
+    private ws: ChatWsService,
     private fb: FormBuilder,
     private route: ActivatedRoute
   ) {}
 
+  ngOnDestroy() {
+    this.wsSub?.unsubscribe();
+    this.ws.unsubscribeFromTaskUpdates();
+  }
+
   ngOnInit() {
+    this.ws.connect();
     this.projectService.getAll().subscribe(projects => {
       this.projects = projects;
       this.route.queryParams.subscribe(p => {
@@ -68,6 +79,25 @@ export class TasksListComponent implements OnInit {
     if (!projectId) return;
     this.form.patchValue({ projectId });
     this.loadTasks();
+    this.subscribeToTaskWs(projectId);
+  }
+
+  private subscribeToTaskWs(projectId: string) {
+    this.wsSub?.unsubscribe();
+    this.ws.subscribeToTaskUpdates(projectId);
+    this.wsSub = this.ws.taskUpdate$.subscribe(updated => {
+      const idx = this.tasks.findIndex(t => t.id === updated.id);
+      if (idx !== -1) {
+        if (!this.showArchived && updated.archived) {
+          this.tasks = this.tasks.filter(t => t.id !== updated.id);
+        } else {
+          this.tasks[idx] = updated;
+          this.tasks = [...this.tasks];
+        }
+      } else if (!updated.archived || this.showArchived) {
+        this.tasks = [...this.tasks, updated].sort((a, b) => (a.caseNumber ?? 0) - (b.caseNumber ?? 0));
+      }
+    });
   }
 
   loadTasks() {
@@ -91,9 +121,8 @@ export class TasksListComponent implements OnInit {
     let list = this.tasks;
     if (this.filterStatus !== 'ALL') list = list.filter(t => t.status === this.filterStatus);
     if (this.filterPriority !== 'ALL') list = list.filter(t => (t.priority || 'MEDIUM') === this.filterPriority);
-    if (this.caseSearch.trim()) {
-      const num = parseInt(this.caseSearch.trim(), 10);
-      if (!isNaN(num)) list = list.filter(t => t.caseNumber === num);
+    if (this.caseSearch !== null) {
+      list = list.filter(t => t.caseNumber === this.caseSearch);
     }
     return list;
   }

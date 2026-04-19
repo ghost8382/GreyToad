@@ -24,7 +24,7 @@
         (click)="openConversation(u)"
       >
         <div class="avatar-wrap">
-          <div class="user-avatar">{{ getInitials(u.username) }}</div>
+          <div class="user-avatar" [class]="avatarClass(u.username)">{{ getInitials(u.username) }}</div>
           <span class="status-dot-sm" [style.background]="getStatusColor(u.status)" [title]="getStatusLabel(u.status)"></span>
         </div>
         <div class="user-info">
@@ -55,7 +55,7 @@
       <!-- Header -->
       <div class="conv-header">
         <div class="avatar-wrap">
-          <div class="user-avatar">{{ getInitials(selectedUser.username) }}</div>
+          <div class="user-avatar" [class]="avatarClass(selectedUser.username)">{{ getInitials(selectedUser.username) }}</div>
           <span class="status-dot-sm" [style.background]="getStatusColor(selectedUser.status)" [title]="getStatusLabel(selectedUser.status)"></span>
         </div>
         <div>
@@ -82,7 +82,7 @@
           </div>
 
           <div class="message" [class.own]="isOwn(msg)">
-            <div class="msg-avatar" *ngIf="!isOwn(msg)">{{ getInitials(selectedUser.username) }}</div>
+            <div class="msg-avatar" *ngIf="!isOwn(msg)" [class]="avatarClass(selectedUser.username)">{{ getInitials(selectedUser.username) }}</div>
             <div class="msg-body">
               <div class="msg-bubble">{{ msg.content }}</div>
               <div class="msg-time">{{ formatTime(msg.createdAt) }}</div>

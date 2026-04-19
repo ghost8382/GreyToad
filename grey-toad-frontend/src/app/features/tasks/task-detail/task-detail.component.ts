@@ -2,10 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
-import { ProjectService, TaskService, UserService } from '../../../core/services/api.service';
+import { catchError, forkJoin, of } from 'rxjs';
+import { TaskService, UserService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Task, Comment, Project, User } from '../../../shared/models';
+import { Task, Comment, User } from '../../../shared/models';
 
 @Component({
   standalone: true,
@@ -31,7 +31,6 @@ export class TaskDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private taskService: TaskService,
-    private projectService: ProjectService,
     private userService: UserService,
     private auth: AuthService,
     private fb: FormBuilder
@@ -39,10 +38,12 @@ export class TaskDetailComponent implements OnInit {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
+    const navTask = window.history.state?.task as Task | undefined;
+
     forkJoin({
       users: this.userService.getAll().pipe(catchError(() => of([] as User[]))),
       comments: this.taskService.getComments(id).pipe(catchError(() => of([] as Comment[]))),
-      task: this.resolveTask(id)
+      task: navTask?.id === id ? of(navTask) : this.taskService.getById(id).pipe(catchError(() => of(null)))
     }).subscribe({
       next: ({ users, comments, task }) => {
         this.users = users;
@@ -50,34 +51,8 @@ export class TaskDetailComponent implements OnInit {
         this.task = task;
         this.loading = false;
       },
-      error: () => {
-        this.loading = false;
-      }
+      error: () => { this.loading = false; }
     });
-  }
-
-  private resolveTask(taskId: string) {
-    const navTask = window.history.state?.task as Task | undefined;
-    if (navTask?.id === taskId) {
-      return of(navTask);
-    }
-
-    return this.projectService.getAll().pipe(
-      catchError(() => of([] as Project[])),
-      switchMap(projects => {
-        if (projects.length === 0) {
-          return of([] as Task[][]);
-        }
-
-        return forkJoin(
-          projects.map(project =>
-            this.taskService.getByProject(project.id).pipe(catchError(() => of([] as Task[])))
-          )
-        );
-      }),
-      map(taskGroups => taskGroups.flat().find(task => task.id === taskId) ?? null),
-      catchError(() => of(null))
-    );
   }
 
   changeStatus(status: string) {

@@ -199,6 +199,12 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   getInitials(name: string) { return name.slice(0, 2).toUpperCase(); }
+
+  avatarClass(name?: string): string {
+    if (!name) return 'av-0';
+    const hash = Array.from(name).reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return 'av-' + (hash % 8);
+  }
   getLastMessage(user: User): string { return this.historyMap[user.id]?.at(-1)?.content?.slice(0, 35) ?? ''; }
   hasHistory(user: User): boolean { return (this.historyMap[user.id]?.length ?? 0) > 0; }
   hasUnread(user: User): boolean { return (this.unreadMap[user.id] ?? 0) > 0; }

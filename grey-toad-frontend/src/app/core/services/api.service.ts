@@ -44,6 +44,7 @@ export class TaskService {
   getByProject(projectId: string, showArchived = false) {
     return this.http.get<Task[]>(`${API}/tasks/project/${projectId}?showArchived=${showArchived}`);
   }
+  getById(id: string) { return this.http.get<Task>(`${API}/tasks/${id}`); }
   create(r: CreateTaskRequest)             { return this.http.post<Task>(`${API}/tasks`, r); }
   changeStatus(id: string, status: string) { return this.http.patch<Task>(`${API}/tasks/${id}/status?status=${status}`, {}); }
   assign(id: string, userId: string)       { return this.http.patch<Task>(`${API}/tasks/${id}/assign?userId=${userId}`, {}); }

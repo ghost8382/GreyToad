@@ -54,6 +54,7 @@
   flex-direction: column;
   transition: width 250ms ease, min-width 250ms ease;
   overflow: hidden;
+  box-shadow: 2px 0 24px rgba(0,0,0,0.4);
 }
 
 .shell.collapsed .sidebar {
@@ -74,15 +75,16 @@
 .brand-logo {
   width: 32px; height: 32px;
   min-width: 32px;
-  background: linear-gradient(135deg, #4a4a4a, #6a6a6a);
+  background: linear-gradient(135deg, #007a3e, #00e676);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  color: #e8e8e8;
+  color: #000;
   letter-spacing: 0.05em;
+  box-shadow: 0 0 12px rgba(0,230,118,0.35);
 }
 
 .brand-name {
@@ -123,9 +125,13 @@
   }
 
   &.active {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border: 1px solid var(--border);
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(0,230,118,0.2);
+    box-shadow: inset 3px 0 0 var(--accent);
+    text-shadow: 0 0 8px var(--accent-glow);
+
+    svg { filter: drop-shadow(0 0 4px var(--accent-glow)); }
   }
 }
 
@@ -211,15 +217,16 @@
 .avatar {
   width: 32px; height: 32px;
   min-width: 32px;
-  background: linear-gradient(135deg, #3a3a3a, #5a5a5a);
-  border: 1px solid var(--border);
+  background: linear-gradient(135deg, #007a3e, #00e676);
+  border: 1px solid rgba(0,230,118,0.3);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: #000;
+  box-shadow: 0 0 8px rgba(0,230,118,0.2);
 }
 
 .user-details {

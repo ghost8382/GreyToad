@@ -77,7 +77,13 @@ public class TaskService {
             sendTaskNotification(saved);
         }
 
-        return mapToResponse(saved);
+        return broadcastAndReturn(saved);
+    }
+
+    public TaskResponse getById(UUID taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+        return mapToResponse(task);
     }
 
     public List<TaskResponse> getByProject(UUID projectId, boolean showArchived) {
@@ -96,7 +102,10 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setStatus(status);
-        return mapToResponse(taskRepository.save(task));
+        if ("DONE".equals(status)) {
+            task.setArchived(true);
+        }
+        return broadcastAndReturn(taskRepository.save(task));
     }
 
     public TaskResponse assign(UUID taskId, UUID userId) {
@@ -107,14 +116,14 @@ public class TaskService {
         task.setAssignee(user);
         Task saved = taskRepository.save(task);
         sendTaskNotification(saved);
-        return mapToResponse(saved);
+        return broadcastAndReturn(saved);
     }
 
     public TaskResponse archive(UUID taskId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setArchived(!task.isArchived());
-        return mapToResponse(taskRepository.save(task));
+        return broadcastAndReturn(taskRepository.save(task));
     }
 
     public TaskResponse setSla(UUID taskId, LocalDateTime slaDeadline, String userEmail) {
@@ -122,7 +131,7 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setSlaDeadline(slaDeadline);
-        return mapToResponse(taskRepository.save(task));
+        return broadcastAndReturn(taskRepository.save(task));
     }
 
     public TaskResponse setPriority(UUID taskId, String priority, String userEmail) {
@@ -130,7 +139,7 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setPriority(priority);
-        return mapToResponse(taskRepository.save(task));
+        return broadcastAndReturn(taskRepository.save(task));
     }
 
     public TaskResponse setType(UUID taskId, String type, String userEmail) {
@@ -138,7 +147,7 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setType(type);
-        return mapToResponse(taskRepository.save(task));
+        return broadcastAndReturn(taskRepository.save(task));
     }
 
     public TaskResponse setDeadline(UUID taskId, LocalDateTime deadline, String userEmail) {
@@ -146,7 +155,14 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setDeadline(deadline);
-        return mapToResponse(taskRepository.save(task));
+        return broadcastAndReturn(taskRepository.save(task));
+    }
+
+    private TaskResponse broadcastAndReturn(Task task) {
+        TaskResponse response = mapToResponse(task);
+        messagingTemplate.convertAndSend(
+                "/topic/tasks/" + task.getProject().getId(), response);
+        return response;
     }
 
     private void requireAdminOrLeader(String userEmail) {

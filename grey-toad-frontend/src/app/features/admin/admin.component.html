@@ -52,12 +52,12 @@
     <div class="user-row" *ngFor="let u of users">
       <div class="user-trigger">
         <div class="avatar-wrapper">
-          <div class="avatar">{{ u.username.slice(0,2).toUpperCase() }}</div>
+          <div class="avatar" [class]="avatarClass(u.username)">{{ u.username.slice(0,2).toUpperCase() }}</div>
           <span class="status-dot" [style.background]="getStatusColor(u.status)"></span>
         </div>
         <div class="user-popover">
           <div class="popover-header">
-            <div class="popover-avatar">{{ u.username.slice(0,2).toUpperCase() }}</div>
+            <div class="popover-avatar" [class]="avatarClass(u.username)">{{ u.username.slice(0,2).toUpperCase() }}</div>
             <div class="popover-info">
               <span class="popover-name">{{ u.username }}</span>
               <span class="popover-email">{{ u.email }}</span>

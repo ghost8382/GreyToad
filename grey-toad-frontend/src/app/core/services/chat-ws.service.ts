@@ -3,7 +3,7 @@ import { Client, IMessage } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Message, DirectMessage, AppNotification } from '../../shared/models';
+import { Message, DirectMessage, AppNotification, Task } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class ChatWsService {
@@ -21,6 +21,11 @@ export class ChatWsService {
   private notificationSubject = new Subject<AppNotification>();
   notification$ = this.notificationSubject.asObservable();
   private notificationSub?: { unsubscribe: () => void };
+
+  private taskUpdateSubject = new Subject<Task>();
+  taskUpdate$ = this.taskUpdateSubject.asObservable();
+  private activeTaskProjectId?: string;
+  private stompTaskSub?: { unsubscribe: () => void };
 
   // Active subscriptions — restored automatically on reconnect
   private activeChannelId?: string;
@@ -71,6 +76,12 @@ export class ChatWsService {
         this.channelMsgSubject.next(JSON.parse(msg.body) as Message);
       });
     }
+    if (this.activeTaskProjectId) {
+      this.stompTaskSub?.unsubscribe();
+      this.stompTaskSub = this.client.subscribe(`/topic/tasks/${this.activeTaskProjectId}`, (msg: IMessage) => {
+        this.taskUpdateSubject.next(JSON.parse(msg.body) as Task);
+      });
+    }
   }
 
   subscribeToChannel(channelId: string) {
@@ -101,6 +112,21 @@ export class ChatWsService {
     this.dmActive = false;
     this.stompDmSub?.unsubscribe();
     this.stompDmSub = undefined;
+  }
+
+  subscribeToTaskUpdates(projectId: string) {
+    this.activeTaskProjectId = projectId;
+    if (!this.client?.connected) return;
+    this.stompTaskSub?.unsubscribe();
+    this.stompTaskSub = this.client.subscribe(`/topic/tasks/${projectId}`, (msg: IMessage) => {
+      this.taskUpdateSubject.next(JSON.parse(msg.body) as Task);
+    });
+  }
+
+  unsubscribeFromTaskUpdates() {
+    this.activeTaskProjectId = undefined;
+    this.stompTaskSub?.unsubscribe();
+    this.stompTaskSub = undefined;
   }
 
   sendChannelMessage(channelId: string, content: string) {

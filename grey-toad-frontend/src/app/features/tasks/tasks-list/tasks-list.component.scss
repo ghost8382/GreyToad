@@ -98,10 +98,12 @@
   color: var(--text-primary);
   transition: all var(--transition);
   position: relative;
+  animation: slideInUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
 
   &:hover {
-    border-color: var(--border-hover);
+    border-color: rgba(0,230,118,0.25);
     background: var(--bg-hover);
+    box-shadow: 0 0 12px rgba(0,230,118,0.06);
     .quick-actions { opacity: 1; }
   }
 }
