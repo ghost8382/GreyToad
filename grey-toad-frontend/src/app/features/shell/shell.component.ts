@@ -53,12 +53,13 @@ export class ShellComponent implements OnInit, OnDestroy {
     });
     this.activeRoute = this.router.url;
 
-    this.ws.connect();
-
-    // All notification types (task, DM, channel) arrive via one permanent queue
-    this.subs.push(this.ws.notification$.subscribe(n => {
-      this.notifications.unshift(n);
-    }));
+    // Delay WebSocket init past FCP — runs after first browser paint
+    setTimeout(() => {
+      this.ws.connect();
+      this.subs.push(this.ws.notification$.subscribe(n => {
+        this.notifications.unshift(n);
+      }));
+    }, 0);
   }
 
   ngOnDestroy() {

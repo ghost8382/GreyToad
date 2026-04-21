@@ -1,4 +1,8 @@
-.dashboard { max-width: 900px; }
+.dashboard {
+  max-width: 900px;
+
+  h2 { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+}
 
 /* Stats */
 .stats-grid {
@@ -17,7 +21,7 @@
   flex-direction: column;
   gap: 6px;
 }
-.stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.stat-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
 .stat-value { font-size: 2rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
 .stat-value.progress { color: #7aaac0; }
 .stat-value.done     { color: #6aba8a; }

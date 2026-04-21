@@ -30,7 +30,7 @@
   <!-- Teams section -->
   <div class="section">
     <div class="section-header">
-      <h4>{{ isAdmin ? 'Wszystkie zespoły' : 'Twoje zespoły' }}</h4>
+      <h2>{{ isAdmin ? 'Wszystkie zespoły' : 'Twoje zespoły' }}</h2>
       <a routerLink="/teams" class="btn btn-ghost btn-sm">Zobacz wszystkie</a>
     </div>
 
@@ -61,18 +61,18 @@
   <!-- Tasks section -->
   <div class="section">
     <div class="section-header">
-      <h4>{{ isAdmin ? 'Ostatnie zadania' : 'Moje zadania' }}</h4>
+      <h2>{{ isAdmin ? 'Ostatnie zadania' : 'Moje zadania' }}</h2>
       <a routerLink="/tasks" class="btn btn-ghost btn-sm">Otwórz listę</a>
     </div>
 
-    <div class="empty-state" *ngIf="!loading && myTasks.length === 0">
+    <div class="empty-state" *ngIf="!loading && displayTasks.length === 0">
       <p *ngIf="isAdmin">Brak zadań w żadnym projekcie.</p>
       <p *ngIf="!isAdmin">Nie masz przypisanych żadnych zadań.</p>
     </div>
 
-    <div class="teams-grid" *ngIf="!loading && myTasks.length > 0">
+    <div class="teams-grid" *ngIf="!loading && displayTasks.length > 0">
       <a
-        *ngFor="let task of myTasks | slice:0:6"
+        *ngFor="let task of displayTasks | slice:0:6"
         [routerLink]="['/tasks', task.id]"
         [state]="{ task: task }"
         class="team-card task-card"
@@ -91,7 +91,7 @@
 
   <!-- Quick actions -->
   <div class="section">
-    <h4 class="mb-16">Szybkie akcje</h4>
+    <h2 class="mb-16">Szybkie akcje</h2>
     <div class="actions-grid">
       <a *ngIf="isAdminOrLeader" routerLink="/teams" class="action-card">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>

@@ -22,6 +22,7 @@ export class DashboardComponent implements OnInit {
   get isAdmin() { return this.auth.isAdmin; }
   get isAdminOrLeader() { return this.auth.isAdminOrLeader; }
 
+  get displayTasks()  { return this.myTasks.filter(t => !t.archived); }
   get todoCount()     { return this.myTasks.filter(t => t.status === 'TODO').length; }
   get progressCount() { return this.myTasks.filter(t => t.status === 'IN_PROGRESS').length; }
   get doneCount()     { return this.myTasks.filter(t => t.status === 'DONE').length; }
@@ -55,7 +56,7 @@ export class DashboardComponent implements OnInit {
       switchMap(projects => {
         if (projects.length === 0) return of([] as Task[]);
         return forkJoin(
-          projects.map(p => this.taskService.getByProject(p.id).pipe(catchError(() => of([] as Task[]))))
+          projects.map(p => this.taskService.getByProject(p.id, true).pipe(catchError(() => of([] as Task[]))))
         ).pipe(map(groups => groups.flat()));
       })
     ).subscribe({
