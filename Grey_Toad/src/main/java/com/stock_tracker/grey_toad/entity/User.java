@@ -29,7 +29,10 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private String role = "USER"; // USER | LEADER | ADMIN
+    private String role = "USER"; // USER | LEADER | ADMIN — controls system permissions
+
+    // Free-text display label, e.g. "Wsparcie merytoryczne", "Frontend Lead"
+    private String jobTitle;
 
     @Column(columnDefinition = "TEXT")
     private String quote;

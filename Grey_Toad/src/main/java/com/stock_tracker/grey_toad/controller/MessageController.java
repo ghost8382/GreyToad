@@ -35,6 +35,38 @@ public class MessageController {
         return messageService.getByChannel(channelId);
     }
 
+    @PostMapping("/{messageId}/replies")
+    public MessageResponse reply(
+            @PathVariable UUID channelId,
+            @PathVariable UUID messageId,
+            @RequestBody @Valid CreateMessageRequest request,
+            Principal principal) {
+        return messageService.send(channelId, requirePrincipal(principal), request.getContent(), messageId);
+    }
+
+    @GetMapping("/{messageId}/replies")
+    public List<MessageResponse> getReplies(@PathVariable UUID channelId,
+                                             @PathVariable UUID messageId) {
+        return messageService.getReplies(messageId);
+    }
+
+    @GetMapping("/threads")
+    public List<MessageResponse> getThreadStarters(@PathVariable UUID channelId) {
+        return messageService.getThreadStarters(channelId);
+    }
+
+    @GetMapping("/posts")
+    public List<MessageResponse> getPosts(@PathVariable UUID channelId) {
+        return messageService.getPosts(channelId);
+    }
+
+    @PostMapping("/posts")
+    public MessageResponse createPost(@PathVariable UUID channelId,
+                                       @RequestBody @Valid CreateMessageRequest request,
+                                       Principal principal) {
+        return messageService.createPost(channelId, requirePrincipal(principal), request.getContent());
+    }
+
     private String requirePrincipal(Principal principal) {
         if (principal == null) {
             throw new UnauthorizedException("Unauthorized user");

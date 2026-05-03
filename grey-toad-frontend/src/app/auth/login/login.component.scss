@@ -18,13 +18,13 @@
 .orb-1 {
   width: 480px; height: 480px;
   top: -120px; left: -120px;
-  background: radial-gradient(circle, #5a5a5a, #2a2a2a);
+  background: radial-gradient(circle, var(--accent), transparent);
   animation: orbFloat 10s ease-in-out infinite;
 }
 .orb-2 {
   width: 400px; height: 400px;
   bottom: -80px; right: -80px;
-  background: radial-gradient(circle, #6a6a6a, #3a3a3a);
+  background: radial-gradient(circle, var(--accent-hover), transparent);
   animation: orbFloat 13s ease-in-out infinite reverse;
 }
 @keyframes orbFloat {
@@ -48,20 +48,20 @@
 .brand {
   font-size: 3.5rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   letter-spacing: -0.04em;
   line-height: 1;
 }
 .brand-line {
   height: 3px;
   width: 80px;
-  background: linear-gradient(90deg, #4a4a4a, #8a8a8a, #4a4a4a);
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
   border-radius: 2px;
   margin: 12px auto 0;
 }
 
 .auth-card {
-  background: linear-gradient(145deg, #1f1f1f, #1a1a1a);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 36px;

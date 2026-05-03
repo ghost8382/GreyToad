@@ -4,6 +4,7 @@ import com.stock_tracker.grey_toad.service.ChannelService;
 import com.stock_tracker.grey_toad.dto.ChannelResponse;
 import com.stock_tracker.grey_toad.dto.CreateChannelRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -28,5 +29,16 @@ public class ChannelController {
     @GetMapping("/team/{teamId}")
     public List<ChannelResponse> getByTeam(@PathVariable UUID teamId, Principal principal) {
         return channelService.getByTeam(teamId, principal != null ? principal.getName() : null);
+    }
+
+    @GetMapping("/project/{projectId}")
+    public List<ChannelResponse> getByProject(@PathVariable UUID projectId) {
+        return channelService.getByProject(projectId);
+    }
+
+    @DeleteMapping("/{channelId}")
+    public ResponseEntity<Void> deleteChannel(@PathVariable UUID channelId) {
+        channelService.delete(channelId);
+        return ResponseEntity.noContent().build();
     }
 }

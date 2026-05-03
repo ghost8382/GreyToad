@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { TaskService, ProjectService, UserService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ProjectContextService } from '../../../core/services/project-context.service';
 import { ChatWsService } from '../../../core/services/chat-ws.service';
 import { Task, Project, User } from '../../../shared/models';
 
@@ -25,12 +26,15 @@ export class TasksListComponent implements OnInit, OnDestroy {
   selectedProject = '';
   filterStatus = 'ALL';
   filterPriority = 'ALL';
+  filterAssignedToMe = false;
   showArchived = false;
   caseSearch: number | null = null;
   loading = false;
   showForm = false;
   saving = false;
   autoAssign = false;
+  viewMode: 'list' | 'kanban' = 'list';
+  me: any = null;
 
   slaTaskId: string | null = null;
   slaValue = '';
@@ -55,7 +59,8 @@ export class TasksListComponent implements OnInit, OnDestroy {
     private auth: AuthService,
     private ws: ChatWsService,
     private fb: FormBuilder,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private projectContext: ProjectContextService
   ) {}
 
   ngOnDestroy() {
@@ -64,11 +69,19 @@ export class TasksListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.auth.currentUser$.subscribe(u => {
+      this.me = u;
+      // Workers default to seeing only their own tasks
+      if (u && u.role !== 'ADMIN' && u.role !== 'LEADER') {
+        this.filterAssignedToMe = true;
+      }
+    });
     this.ws.connect();
     this.projectService.getAll().subscribe(projects => {
       this.projects = projects;
       this.route.queryParams.subscribe(p => {
-        if (p['projectId']) this.onProjectChange(p['projectId']);
+        const toSelect = p['projectId'] || this.projectContext.selected?.id || '';
+        if (toSelect) this.onProjectChange(toSelect);
       });
     });
     this.userService.getAll().subscribe(u => this.users = u);
@@ -117,15 +130,25 @@ export class TasksListComponent implements OnInit, OnDestroy {
     this.loadTasks();
   }
 
+  get todoTasks()       { return this.filteredTasks.filter(t => t.status === 'TODO'); }
+  get inProgressTasks() { return this.filteredTasks.filter(t => t.status === 'IN_PROGRESS'); }
+  get doneTasks()       { return this.filteredTasks.filter(t => t.status === 'DONE'); }
+
   get filteredTasks() {
     let list = this.tasks;
+    if (this.filterAssignedToMe && this.me) list = list.filter(t => t.assigneeId === this.me.id);
     if (this.filterStatus !== 'ALL') list = list.filter(t => t.status === this.filterStatus);
     if (this.filterPriority !== 'ALL') list = list.filter(t => (t.priority || 'MEDIUM') === this.filterPriority);
-    if (this.caseSearch !== null) {
-      list = list.filter(t => t.caseNumber === this.caseSearch);
-    }
+    if (this.caseSearch !== null) list = list.filter(t => t.caseNumber === this.caseSearch);
     return list;
   }
+
+  get myTaskCount() {
+    if (!this.me) return 0;
+    return this.tasks.filter(t => t.assigneeId === this.me.id).length;
+  }
+
+  countByStatus(s: string) { return this.tasks.filter(t => t.status === s).length; }
 
   createTask() {
     if (this.form.invalid) return;

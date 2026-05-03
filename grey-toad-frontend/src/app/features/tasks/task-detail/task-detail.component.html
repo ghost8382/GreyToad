@@ -36,13 +36,12 @@
       <!-- Comments -->
       <div class="comments-section">
         <h4 class="mb-16">Comments ({{ comments.length }})</h4>
-
         <div class="comments-list">
           <div class="comment" *ngFor="let c of comments">
-            <div class="comment-avatar">{{ getUserName(c.authorId).slice(0,2).toUpperCase() }}</div>
+            <div class="comment-avatar">{{ (c.authorName || getUserName(c.authorId)).slice(0,2).toUpperCase() }}</div>
             <div class="comment-body">
               <div class="comment-meta">
-                <span class="comment-author">{{ getUserName(c.authorId) }}</span>
+                <span class="comment-author">{{ c.authorName || getUserName(c.authorId) }}</span>
                 <span class="text-muted text-sm">{{ formatDate(c.createdAt) }}</span>
               </div>
               <p class="comment-content">{{ c.content }}</p>
@@ -52,15 +51,8 @@
             <p>No comments yet. Be the first!</p>
           </div>
         </div>
-
-        <!-- Add comment -->
         <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="comment-form">
-          <textarea
-            formControlName="content"
-            class="form-input"
-            placeholder="Write a comment..."
-            rows="3"
-          ></textarea>
+          <textarea formControlName="content" class="form-input" placeholder="Write a comment..." rows="3"></textarea>
           <div class="comment-form-footer">
             <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving || commentForm.invalid">
               <span class="spinner" *ngIf="saving"></span>
@@ -68,6 +60,82 @@
             </button>
           </div>
         </form>
+      </div>
+
+      <!-- Time Tracking -->
+      <div class="detail-section">
+        <div class="section-head">
+          <h4>Time Tracking</h4>
+          <span class="total-time-badge" *ngIf="totalMinutes > 0">{{ formatMinutes(totalMinutes) }} total</span>
+        </div>
+
+        <div class="time-entries-list" *ngIf="timeEntries.length > 0">
+          <div class="time-entry" *ngFor="let e of timeEntries">
+            <div class="te-avatar">{{ e.userName.slice(0,2).toUpperCase() }}</div>
+            <div class="te-body">
+              <div class="te-meta">
+                <span class="te-user">{{ e.userName }}</span>
+                <span class="te-date text-muted text-sm">{{ e.date }}</span>
+                <span class="te-minutes">{{ formatMinutes(e.minutes) }}</span>
+              </div>
+              <p class="te-desc text-muted text-sm" *ngIf="e.description">{{ e.description }}</p>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted text-sm mb-16" *ngIf="timeEntries.length === 0">No time logged yet.</p>
+
+        <form [formGroup]="timeForm" (ngSubmit)="submitTimeEntry()" class="time-form">
+          <div class="time-form-row">
+            <input
+              type="number"
+              formControlName="minutes"
+              class="form-input"
+              placeholder="Minutes"
+              min="1"
+              style="width: 110px; flex-shrink: 0"
+            />
+            <input
+              type="text"
+              formControlName="description"
+              class="form-input"
+              placeholder="What did you work on? (optional)"
+              style="flex: 1"
+            />
+            <button type="submit" class="btn btn-ghost btn-sm" [disabled]="savingTime || timeForm.invalid" style="flex-shrink: 0">
+              <span class="spinner" *ngIf="savingTime"></span>
+              {{ savingTime ? '' : 'Log Time' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Attachments -->
+      <div class="detail-section">
+        <div class="section-head">
+          <h4>Attachments</h4>
+          <label class="btn btn-ghost btn-sm upload-label" [class.loading]="uploading">
+            <span class="spinner" *ngIf="uploading"></span>
+            <svg *ngIf="!uploading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {{ uploading ? '' : 'Upload' }}
+            <input type="file" (change)="onFileSelect($event)" style="display:none" />
+          </label>
+        </div>
+
+        <div class="attachments-list" *ngIf="attachments.length > 0">
+          <a
+            *ngFor="let att of attachments"
+            [href]="downloadUrl(att.id)"
+            target="_blank"
+            class="attachment-item"
+            [title]="att.originalName"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <span class="att-name">{{ att.originalName }}</span>
+            <span class="att-meta text-muted">{{ formatFileSize(att.fileSize) }}</span>
+            <span class="att-meta text-muted">{{ att.uploaderName }}</span>
+          </a>
+        </div>
+        <p class="text-muted text-sm" *ngIf="attachments.length === 0 && !uploading">No attachments yet.</p>
       </div>
     </div>
 

@@ -6,11 +6,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter @Builder
-public class CommentResponse {
+public class AuditLogResponse {
     private UUID id;
-    private String content;
-    private UUID authorId;
-    private String authorName;
-    private UUID taskId;
+    private String actorName;
+    private String action;
+    private String entityType;
+    private String entityId;
+    private String details;
     private LocalDateTime createdAt;
 }

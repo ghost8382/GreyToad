@@ -108,6 +108,18 @@ public class UserService {
         return mapToResponse(userRepository.save(target));
     }
 
+    public UserResponse setJobTitle(UUID userId, String jobTitle, String requesterEmail) {
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (!"ADMIN".equals(requester.getRole())) {
+            throw new com.stock_tracker.grey_toad.exceptions.ForbiddenException("Only administrators can change job titles");
+        }
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        target.setJobTitle(jobTitle == null || jobTitle.isBlank() ? null : jobTitle.trim());
+        return mapToResponse(userRepository.save(target));
+    }
+
     public User getEntityByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -119,6 +131,7 @@ public class UserService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(user.getRole())
+                .jobTitle(user.getJobTitle())
                 .quote(user.getQuote())
                 .status(user.getStatus())
                 .build();

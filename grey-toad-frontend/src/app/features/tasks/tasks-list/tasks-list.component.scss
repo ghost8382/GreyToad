@@ -1,4 +1,105 @@
-.page { max-width: 900px; }
+.page { max-width: 100%; }
+
+/* ---- Header actions ---- */
+.header-actions { display: flex; align-items: center; gap: 10px; }
+
+.view-toggle {
+  display: flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden;
+}
+.view-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: transparent; border: none;
+  color: var(--text-muted); cursor: pointer;
+  transition: all var(--transition);
+  &:hover { background: var(--bg-hover); color: var(--text-primary); }
+  &.active { background: var(--accent-dim); color: var(--accent); }
+}
+
+/* ---- Kanban board ---- */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 8px;
+  overflow-x: auto;
+  min-height: 400px;
+}
+
+.kanban-col {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+.kanban-col-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+  &.kanban-todo     { color: #7aaac0; border-top: 3px solid #7aaac0; }
+  &.kanban-progress { color: #e8a44a; border-top: 3px solid #e8a44a; }
+  &.kanban-done     { color: #4a9a6a; border-top: 3px solid #4a9a6a; }
+}
+
+.kanban-count {
+  background: var(--bg-tertiary);
+  border-radius: 10px; padding: 1px 7px;
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+}
+
+.kanban-cards {
+  padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  min-height: 80px;
+}
+
+.kanban-card {
+  display: block;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all var(--transition);
+  cursor: pointer;
+  &:hover { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0,230,118,0.1); }
+  &.kc-done { opacity: 0.75; }
+}
+
+.kanban-card-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.kc-case { font-size: 11px; }
+.kc-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; line-height: 1.4; }
+.kc-meta  { font-size: 11px; margin-bottom: 6px; line-height: 1.4; }
+
+.kc-footer {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.kc-assignee { margin-left: auto; font-size: 11px; }
+
+.kanban-status-actions {
+  display: flex; gap: 6px; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 7px;
+}
+
+.kc-move-btn {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 10px; font-family: var(--font);
+  border-radius: var(--radius-sm); padding: 3px 8px; cursor: pointer;
+  transition: all var(--transition);
+  &:hover { color: var(--accent); border-color: var(--accent); }
+  &.kc-back:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+}
+
+.kanban-empty { padding: 16px 0; text-align: center; font-size: 12px; color: var(--text-muted); }
 
 .selector-row { margin-bottom: 24px; max-width: 320px; }
 .project-select { width: 100%; }
@@ -7,28 +108,90 @@
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 .form-footer { display: flex; justify-content: flex-end; gap: 8px; }
 
-/* Filters row */
-.filters-row {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 12px; margin-bottom: 20px;
-  border-bottom: 1px solid var(--border); padding-bottom: 0;
+/* Filter panel */
+.filter-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+.filter-panel-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.filter-sep {
+  width: 1px; height: 20px; background: var(--border); flex-shrink: 0;
+}
+.ml-auto { margin-left: auto; }
+
+/* Assigned-to-me toggle */
+.assign-toggle {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 12px;
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; transition: all var(--transition);
+  flex-shrink: 0;
+
+  &:hover { border-color: var(--border-hover); color: var(--text-secondary); }
+  &.active {
+    background: var(--accent-dim); border-color: var(--accent);
+    color: var(--accent);
+    svg { color: var(--accent); }
+  }
+}
+.assign-count {
+  background: var(--accent); color: #fff;
+  font-size: 9px; font-weight: 700; min-width: 16px; height: 16px;
+  border-radius: 8px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 
-.filter-tabs {
-  display: flex; gap: 4px;
-}
-.filter-tab {
+/* Status pills */
+.status-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.status-pill {
   display: flex; align-items: center; gap: 5px;
-  background: transparent; border: none;
-  padding: 8px 14px;
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 11px;
   font-family: var(--font); font-size: 12px; font-weight: 500;
-  color: var(--text-muted); cursor: pointer;
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
-  transition: all var(--transition);
-  &:hover { color: var(--text-secondary); }
-  &.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
-  &.archive-tab.active { color: #a07a6a; border-bottom-color: #a07a6a; }
+  color: var(--text-muted); cursor: pointer; transition: all var(--transition);
+
+  &:hover { border-color: var(--border-hover); color: var(--text-secondary); }
+
+  &.pill-all.active     { background: rgba(100,100,100,0.12); border-color: #666; color: var(--text-primary); }
+  &.pill-todo.active    { background: rgba(90,138,170,0.12); border-color: #5a8aaa; color: #5a8aaa; }
+  &.pill-progress.active{ background: rgba(232,164,74,0.12); border-color: #e8a44a; color: #e8a44a; }
+  &.pill-done.active    { background: rgba(74,154,106,0.12); border-color: #4a9a6a; color: #4a9a6a; }
+  &.pill-archive.active { background: rgba(160,120,100,0.12); border-color: #a07a6a; color: #a07a6a; }
 }
+.pill-count {
+  background: rgba(255,255,255,0.08); border-radius: 8px;
+  padding: 0 5px; font-size: 10px; font-weight: 700;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-todo-sm     { background: #5a8aaa; }
+.dot-progress-sm { background: #e8a44a; }
+.dot-done-sm     { background: #4a9a6a; }
+
+/* Priority pills */
+.priority-pills { display: flex; gap: 3px; }
+.prio-pill {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 10px;
+  font-family: var(--font); font-size: 11px; font-weight: 700;
+  color: var(--text-muted); cursor: pointer; transition: all var(--transition);
+
+  &:hover { border-color: var(--border-hover); }
+  &.active { background: var(--bg-hover); border-color: var(--border-hover); color: var(--text-primary); }
+  &.prio-critical.active { background: rgba(220,50,50,0.1); border-color: #dc3232; color: #dc3232; }
+  &.prio-high.active     { background: rgba(220,130,50,0.1); border-color: #e87a3a; color: #e87a3a; }
+  &.prio-medium.active   { background: rgba(220,190,50,0.1); border-color: #c8a020; color: #c8a020; }
+  &.prio-low.active      { background: rgba(90,150,220,0.1); border-color: #5a96dc; color: #5a96dc; }
+}
+.prio-count { font-size: 10px; opacity: 0.7; }
 
 .case-search {
   display: flex; align-items: center; gap: 6px;
@@ -245,11 +408,11 @@
 .sla-popup-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 @media (max-width: 768px) {
-  .filters-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  .filter-panel-row {
+    gap: 6px;
   }
+  .filter-sep { display: none; }
+  .ml-auto { margin-left: 0; width: 100%; }
 
   .task-row {
     flex-wrap: wrap;

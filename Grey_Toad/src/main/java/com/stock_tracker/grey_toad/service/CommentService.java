@@ -62,6 +62,7 @@ public class CommentService {
                 .id(comment.getId())
                 .content(comment.getContent())
                 .authorId(comment.getAuthor().getId())
+                .authorName(comment.getAuthor().getUsername())
                 .taskId(comment.getTask().getId())
                 .createdAt(comment.getCreatedAt())
                 .build();

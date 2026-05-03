@@ -6,8 +6,10 @@ import {
   Project, CreateProjectRequest,
   Task, CreateTaskRequest,
   Channel, CreateChannelRequest,
-  Message,
+  Message, MessageReaction,
   Comment, CreateCommentRequest,
+  TimeEntry, CreateTimeEntryRequest,
+  Attachment, AuditLogEntry,
   DirectMessage,
   User, UpdateProfileRequest
 } from '../../shared/models';
@@ -32,10 +34,10 @@ export class TeamService {
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
   constructor(private http: HttpClient) {}
-  getAll()                      { return this.http.get<Project[]>(`${API}/projects`); }
-  getById(id: string)           { return this.http.get<Project>(`${API}/projects/${id}`); }
+  getAll()                        { return this.http.get<Project[]>(`${API}/projects`); }
+  getById(id: string)             { return this.http.get<Project>(`${API}/projects/${id}`); }
   create(r: CreateProjectRequest) { return this.http.post<Project>(`${API}/projects`, r); }
-  delete(id: string)            { return this.http.delete(`${API}/projects/${id}`); }
+  delete(id: string)              { return this.http.delete(`${API}/projects/${id}`); }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,28 +46,60 @@ export class TaskService {
   getByProject(projectId: string, showArchived = false) {
     return this.http.get<Task[]>(`${API}/tasks/project/${projectId}?showArchived=${showArchived}`);
   }
-  getById(id: string) { return this.http.get<Task>(`${API}/tasks/${id}`); }
-  create(r: CreateTaskRequest)             { return this.http.post<Task>(`${API}/tasks`, r); }
-  changeStatus(id: string, status: string) { return this.http.patch<Task>(`${API}/tasks/${id}/status?status=${status}`, {}); }
-  assign(id: string, userId: string)       { return this.http.patch<Task>(`${API}/tasks/${id}/assign?userId=${userId}`, {}); }
-  archive(id: string)                      { return this.http.patch<Task>(`${API}/tasks/${id}/archive`, {}); }
-  setSla(id: string, slaDeadline: string)  { return this.http.patch<Task>(`${API}/tasks/${id}/sla?slaDeadline=${encodeURIComponent(slaDeadline)}`, {}); }
+  getById(id: string)                              { return this.http.get<Task>(`${API}/tasks/${id}`); }
+  create(r: CreateTaskRequest)                     { return this.http.post<Task>(`${API}/tasks`, r); }
+  changeStatus(id: string, status: string)         { return this.http.patch<Task>(`${API}/tasks/${id}/status?status=${status}`, {}); }
+  assign(id: string, userId: string)               { return this.http.patch<Task>(`${API}/tasks/${id}/assign?userId=${userId}`, {}); }
+  archive(id: string)                              { return this.http.patch<Task>(`${API}/tasks/${id}/archive`, {}); }
+  setSla(id: string, slaDeadline: string)          { return this.http.patch<Task>(`${API}/tasks/${id}/sla?slaDeadline=${encodeURIComponent(slaDeadline)}`, {}); }
+  setPriority(id: string, priority: string)        { return this.http.patch<Task>(`${API}/tasks/${id}/priority?priority=${priority}`, {}); }
+  setType(id: string, type: string)                { return this.http.patch<Task>(`${API}/tasks/${id}/type?type=${type}`, {}); }
+  setDeadline(id: string, deadline: string)        { return this.http.patch<Task>(`${API}/tasks/${id}/deadline?deadline=${encodeURIComponent(deadline)}`, {}); }
 
-  getComments(taskId: string)                          { return this.http.get<Comment[]>(`${API}/tasks/${taskId}/comments`); }
-  addComment(taskId: string, r: CreateCommentRequest)  { return this.http.post<Comment>(`${API}/tasks/${taskId}/comments`, r); }
-  setPriority(id: string, priority: string)            { return this.http.patch<Task>(`${API}/tasks/${id}/priority?priority=${priority}`, {}); }
-  setType(id: string, type: string)                    { return this.http.patch<Task>(`${API}/tasks/${id}/type?type=${type}`, {}); }
-  setDeadline(id: string, deadline: string)            { return this.http.patch<Task>(`${API}/tasks/${id}/deadline?deadline=${encodeURIComponent(deadline)}`, {}); }
+  getComments(taskId: string)                      { return this.http.get<Comment[]>(`${API}/tasks/${taskId}/comments`); }
+  addComment(taskId: string, r: CreateCommentRequest) { return this.http.post<Comment>(`${API}/tasks/${taskId}/comments`, r); }
+
+  getTimeEntries(taskId: string)                   { return this.http.get<TimeEntry[]>(`${API}/tasks/${taskId}/time-entries`); }
+  logTime(taskId: string, r: CreateTimeEntryRequest) { return this.http.post<TimeEntry>(`${API}/tasks/${taskId}/time-entries`, r); }
+  getTotalMinutes(taskId: string)                  { return this.http.get<number>(`${API}/tasks/${taskId}/time-entries/total`); }
+
+  getAttachments(taskId: string)                   { return this.http.get<Attachment[]>(`${API}/tasks/${taskId}/attachments`); }
+  uploadAttachment(taskId: string, file: File)     {
+    const fd = new FormData(); fd.append('file', file);
+    return this.http.post<Attachment>(`${API}/tasks/${taskId}/attachments`, fd);
+  }
 }
 
 @Injectable({ providedIn: 'root' })
 export class ChannelService {
   constructor(private http: HttpClient) {}
-  getByTeam(teamId: string)        { return this.http.get<Channel[]>(`${API}/channels/team/${teamId}`); }
-  create(r: CreateChannelRequest)  { return this.http.post<Channel>(`${API}/channels`, r); }
-  getMessages(channelId: string)   { return this.http.get<Message[]>(`${API}/channels/${channelId}/messages`); }
+  getByTeam(teamId: string)       { return this.http.get<Channel[]>(`${API}/channels/team/${teamId}`); }
+  getByProject(projectId: string) { return this.http.get<Channel[]>(`${API}/channels/project/${projectId}`); }
+  create(r: CreateChannelRequest) { return this.http.post<Channel>(`${API}/channels`, r); }
+  getMessages(channelId: string)  { return this.http.get<Message[]>(`${API}/channels/${channelId}/messages`); }
   sendMessage(channelId: string, content: string) {
     return this.http.post<Message>(`${API}/channels/${channelId}/messages`, { content });
+  }
+  getReplies(channelId: string, messageId: string) {
+    return this.http.get<Message[]>(`${API}/channels/${channelId}/messages/${messageId}/replies`);
+  }
+  sendReply(channelId: string, messageId: string, content: string) {
+    return this.http.post<Message>(`${API}/channels/${channelId}/messages/${messageId}/replies`, { content });
+  }
+  toggleReaction(messageId: string, emoji: string) {
+    return this.http.post<MessageReaction[]>(`${API}/messages/${messageId}/reactions?emoji=${encodeURIComponent(emoji)}`, {});
+  }
+  getThreadStarters(channelId: string) {
+    return this.http.get<Message[]>(`${API}/channels/${channelId}/messages/threads`);
+  }
+  getPosts(channelId: string) {
+    return this.http.get<Message[]>(`${API}/channels/${channelId}/messages/posts`);
+  }
+  createPost(channelId: string, content: string) {
+    return this.http.post<Message>(`${API}/channels/${channelId}/messages/posts`, { content });
+  }
+  deleteChannel(channelId: string) {
+    return this.http.delete(`${API}/channels/${channelId}`);
   }
 }
 
@@ -88,4 +122,20 @@ export class DirectMessageService {
   getConversation(otherUserId: string) {
     return this.http.get<DirectMessage[]>(`${API}/direct-messages/${otherUserId}`);
   }
+  toggleReaction(dmId: string, emoji: string) {
+    return this.http.post<MessageReaction[]>(`${API}/direct-messages/${dmId}/reactions?emoji=${encodeURIComponent(emoji)}`, {});
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class AuditLogService {
+  constructor(private http: HttpClient) {}
+  getByProject(projectId: string) {
+    return this.http.get<AuditLogEntry[]>(`${API}/audit-log/project/${projectId}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class AttachmentService {
+  getDownloadUrl(id: string): string { return `${API}/attachments/${id}/download`; }
 }

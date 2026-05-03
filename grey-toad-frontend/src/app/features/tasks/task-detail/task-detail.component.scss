@@ -142,4 +142,65 @@
 
 .deadline-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
+/* Time tracking & attachments sections */
+.detail-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+  h4 { margin: 0; }
+}
+.total-time-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px;
+  border-radius: 10px; background: var(--bg-tertiary);
+  border: 1px solid var(--border); color: var(--text-secondary);
+}
+.mb-16 { margin-bottom: 16px; }
+
+/* Time entries */
+.time-entries-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.time-entry { display: flex; gap: 10px; align-items: flex-start; }
+.te-avatar {
+  width: 28px; height: 28px; min-width: 28px;
+  background: linear-gradient(135deg, #3a3a3a, #5a5a5a);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: var(--text-secondary);
+}
+.te-body { flex: 1; }
+.te-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 2px; }
+.te-user { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.te-date { font-size: 11px; }
+.te-minutes {
+  margin-left: auto; font-size: 12px; font-weight: 700;
+  color: #5a8aaa; background: rgba(90,138,170,0.1);
+  border-radius: 4px; padding: 1px 6px;
+}
+.te-desc { font-size: 12px; line-height: 1.5; }
+
+.time-form { margin-top: 4px; }
+.time-form-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Attachments */
+.upload-label {
+  cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  &.loading { opacity: 0.6; pointer-events: none; }
+}
+.attachments-list { display: flex; flex-direction: column; gap: 6px; }
+.attachment-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--radius-sm);
+  background: var(--bg-tertiary); border: 1px solid var(--border);
+  color: var(--text-secondary); text-decoration: none; font-size: 13px;
+  transition: all var(--transition);
+  &:hover { border-color: var(--border-hover); color: var(--text-primary); background: var(--bg-hover); }
+  svg { flex-shrink: 0; color: var(--text-muted); }
+}
+.att-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.att-meta { font-size: 11px; flex-shrink: 0; }
+
 @media (max-width: 700px) { .task-layout { grid-template-columns: 1fr; } }
+@media (max-width: 500px) { .time-form-row { flex-direction: column; align-items: stretch; } }

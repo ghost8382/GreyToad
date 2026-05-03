@@ -4,10 +4,21 @@
       <h2>Cases</h2>
       <p class="text-muted text-sm">Track and manage support cases</p>
     </div>
-    <button class="btn btn-primary" *ngIf="canCreateTask" (click)="showForm = !showForm" [disabled]="!selectedProject">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Case
-    </button>
+    <div class="header-actions">
+      <!-- View toggle -->
+      <div class="view-toggle" *ngIf="selectedProject">
+        <button class="view-btn" [class.active]="viewMode==='list'" (click)="viewMode='list'" title="List view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+        <button class="view-btn" [class.active]="viewMode==='kanban'" (click)="viewMode='kanban'" title="Kanban view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="12"/><rect x="17" y="3" width="5" height="15"/></svg>
+        </button>
+      </div>
+      <button class="btn btn-primary" *ngIf="canCreateTask" (click)="showForm = !showForm" [disabled]="!selectedProject">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Case
+      </button>
+    </div>
   </div>
 
   <!-- Project selector -->
@@ -83,30 +94,62 @@
   </div>
 
   <!-- Filters -->
-  <div class="filters-row" *ngIf="selectedProject">
-    <div class="filter-tabs">
-      <button class="filter-tab" [class.active]="filterStatus==='ALL'"         (click)="filterStatus='ALL'">Wszystkie ({{ tasks.length }})</button>
-      <button class="filter-tab" [class.active]="filterStatus==='TODO'"        (click)="filterStatus='TODO'">To Do</button>
-      <button class="filter-tab" [class.active]="filterStatus==='IN_PROGRESS'" (click)="filterStatus='IN_PROGRESS'">In Progress</button>
-      <button class="filter-tab" [class.active]="filterStatus==='DONE'"        (click)="filterStatus='DONE'">Done</button>
-      <button class="filter-tab archive-tab" [class.active]="showArchived" (click)="toggleArchived()">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-        Archiwum
+  <div class="filter-panel" *ngIf="selectedProject">
+    <div class="filter-panel-row">
+      <!-- Assigned to me toggle -->
+      <button class="assign-toggle" [class.active]="filterAssignedToMe" (click)="filterAssignedToMe = !filterAssignedToMe">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Assigned to me
+        <span class="assign-count" *ngIf="myTaskCount > 0">{{ myTaskCount }}</span>
       </button>
-    </div>
-    <div class="filters-right">
-      <!-- Priority filter -->
-      <div class="priority-filter">
-        <button class="pf-btn" [class.active]="filterPriority==='ALL'" (click)="filterPriority='ALL'">Wszystkie</button>
-        <button class="pf-btn pf-critical" [class.active]="filterPriority==='CRITICAL'" (click)="filterPriority='CRITICAL'" title="Critical ({{ countByPriority('CRITICAL') }})">!!</button>
-        <button class="pf-btn pf-high"     [class.active]="filterPriority==='HIGH'"     (click)="filterPriority='HIGH'"     title="High ({{ countByPriority('HIGH') }})">↑</button>
-        <button class="pf-btn pf-medium"   [class.active]="filterPriority==='MEDIUM'"   (click)="filterPriority='MEDIUM'"   title="Medium ({{ countByPriority('MEDIUM') }})">–</button>
-        <button class="pf-btn pf-low"      [class.active]="filterPriority==='LOW'"      (click)="filterPriority='LOW'"      title="Low ({{ countByPriority('LOW') }})">↓</button>
+
+      <div class="filter-sep"></div>
+
+      <!-- Status pills -->
+      <div class="status-pills">
+        <button class="status-pill pill-all"      [class.active]="filterStatus==='ALL'"         (click)="filterStatus='ALL'">
+          All <span class="pill-count">{{ tasks.length }}</span>
+        </button>
+        <button class="status-pill pill-todo"     [class.active]="filterStatus==='TODO'"        (click)="filterStatus='TODO'">
+          <span class="status-dot dot-todo-sm"></span> To Do <span class="pill-count">{{ countByStatus('TODO') }}</span>
+        </button>
+        <button class="status-pill pill-progress" [class.active]="filterStatus==='IN_PROGRESS'" (click)="filterStatus='IN_PROGRESS'">
+          <span class="status-dot dot-progress-sm"></span> In Progress <span class="pill-count">{{ countByStatus('IN_PROGRESS') }}</span>
+        </button>
+        <button class="status-pill pill-done"     [class.active]="filterStatus==='DONE'"        (click)="filterStatus='DONE'">
+          <span class="status-dot dot-done-sm"></span> Done <span class="pill-count">{{ countByStatus('DONE') }}</span>
+        </button>
+        <button class="status-pill pill-archive"  [class.active]="showArchived"                 (click)="toggleArchived()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/></svg>
+          Archive
+        </button>
       </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Priority pills -->
+      <div class="priority-pills">
+        <button class="prio-pill" [class.active]="filterPriority==='ALL'" (click)="filterPriority='ALL'" title="All priorities">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <button class="prio-pill prio-critical" [class.active]="filterPriority==='CRITICAL'" (click)="filterPriority='CRITICAL'" title="Critical ({{countByPriority('CRITICAL')}})">
+          !! <span class="prio-count">{{ countByPriority('CRITICAL') }}</span>
+        </button>
+        <button class="prio-pill prio-high"    [class.active]="filterPriority==='HIGH'"     (click)="filterPriority='HIGH'"     title="High ({{countByPriority('HIGH')}})">
+          ↑ <span class="prio-count">{{ countByPriority('HIGH') }}</span>
+        </button>
+        <button class="prio-pill prio-medium"  [class.active]="filterPriority==='MEDIUM'"   (click)="filterPriority='MEDIUM'"   title="Medium ({{countByPriority('MEDIUM')}})">
+          – <span class="prio-count">{{ countByPriority('MEDIUM') }}</span>
+        </button>
+        <button class="prio-pill prio-low"     [class.active]="filterPriority==='LOW'"      (click)="filterPriority='LOW'"      title="Low ({{countByPriority('LOW')}})">
+          ↓ <span class="prio-count">{{ countByPriority('LOW') }}</span>
+        </button>
+      </div>
+
       <!-- Case search -->
-      <div class="case-search">
+      <div class="case-search ml-auto">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="number" class="case-search-input" placeholder="#numer" [(ngModel)]="caseSearch" min="1" />
+        <input type="number" class="case-search-input" placeholder="#case" [(ngModel)]="caseSearch" min="1" />
       </div>
     </div>
   </div>
@@ -128,8 +171,86 @@
     <p>No cases in this project yet</p>
   </div>
 
+  <!-- Kanban board -->
+  <div class="kanban-board" *ngIf="!loading && selectedProject && viewMode === 'kanban'">
+    <!-- TODO -->
+    <div class="kanban-col">
+      <div class="kanban-col-header kanban-todo">
+        <span>To Do</span><span class="kanban-count">{{ todoTasks.length }}</span>
+      </div>
+      <div class="kanban-cards">
+        <a *ngFor="let task of todoTasks" class="kanban-card" [routerLink]="['/tasks', task.id]" [state]="{ task: task }">
+          <div class="kanban-card-top">
+            <span class="kc-case text-muted">#{{ task.caseNumber }}</span>
+            <span class="priority-badge" [class]="priorityClass(task.priority)">{{ priorityLabel(task.priority) }}</span>
+          </div>
+          <div class="kc-title">{{ task.title }}</div>
+          <div class="kc-meta text-sm text-muted" *ngIf="task.description">{{ task.description | slice:0:60 }}…</div>
+          <div class="kc-footer">
+            <span class="team-chip" *ngFor="let t of task.teamNames">{{ t }}</span>
+            <span class="kc-assignee text-muted">{{ getUserName(task) }}</span>
+          </div>
+          <div class="kanban-status-actions" (click)="$event.preventDefault(); $event.stopPropagation()">
+            <button class="kc-move-btn" (click)="changeStatus(task, 'IN_PROGRESS')">→ In Progress</button>
+          </div>
+        </a>
+        <div class="kanban-empty" *ngIf="todoTasks.length === 0">Brak zadań</div>
+      </div>
+    </div>
+
+    <!-- IN PROGRESS -->
+    <div class="kanban-col">
+      <div class="kanban-col-header kanban-progress">
+        <span>In Progress</span><span class="kanban-count">{{ inProgressTasks.length }}</span>
+      </div>
+      <div class="kanban-cards">
+        <a *ngFor="let task of inProgressTasks" class="kanban-card" [routerLink]="['/tasks', task.id]" [state]="{ task: task }">
+          <div class="kanban-card-top">
+            <span class="kc-case text-muted">#{{ task.caseNumber }}</span>
+            <span class="priority-badge" [class]="priorityClass(task.priority)">{{ priorityLabel(task.priority) }}</span>
+          </div>
+          <div class="kc-title">{{ task.title }}</div>
+          <div class="kc-meta text-sm text-muted" *ngIf="task.description">{{ task.description | slice:0:60 }}…</div>
+          <div class="kc-footer">
+            <span class="team-chip" *ngFor="let t of task.teamNames">{{ t }}</span>
+            <span class="kc-assignee text-muted">{{ getUserName(task) }}</span>
+          </div>
+          <div class="kanban-status-actions" (click)="$event.preventDefault(); $event.stopPropagation()">
+            <button class="kc-move-btn kc-back" (click)="changeStatus(task, 'TODO')">← To Do</button>
+            <button class="kc-move-btn" (click)="changeStatus(task, 'DONE')">→ Done</button>
+          </div>
+        </a>
+        <div class="kanban-empty" *ngIf="inProgressTasks.length === 0">Brak zadań</div>
+      </div>
+    </div>
+
+    <!-- DONE -->
+    <div class="kanban-col">
+      <div class="kanban-col-header kanban-done">
+        <span>Done</span><span class="kanban-count">{{ doneTasks.length }}</span>
+      </div>
+      <div class="kanban-cards">
+        <a *ngFor="let task of doneTasks" class="kanban-card kc-done" [routerLink]="['/tasks', task.id]" [state]="{ task: task }">
+          <div class="kanban-card-top">
+            <span class="kc-case text-muted">#{{ task.caseNumber }}</span>
+            <span class="priority-badge" [class]="priorityClass(task.priority)">{{ priorityLabel(task.priority) }}</span>
+          </div>
+          <div class="kc-title">{{ task.title }}</div>
+          <div class="kc-footer">
+            <span class="team-chip" *ngFor="let t of task.teamNames">{{ t }}</span>
+            <span class="kc-assignee text-muted">{{ getUserName(task) }}</span>
+          </div>
+          <div class="kanban-status-actions" (click)="$event.preventDefault(); $event.stopPropagation()">
+            <button class="kc-move-btn kc-back" (click)="changeStatus(task, 'IN_PROGRESS')">← In Progress</button>
+          </div>
+        </a>
+        <div class="kanban-empty" *ngIf="doneTasks.length === 0">Brak zadań</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tasks list -->
-  <div class="tasks-list stagger" *ngIf="!loading && filteredTasks.length > 0">
+  <div class="tasks-list stagger" *ngIf="!loading && filteredTasks.length > 0 && viewMode === 'list'">
     <a
       *ngFor="let task of filteredTasks"
       [routerLink]="['/tasks', task.id]"

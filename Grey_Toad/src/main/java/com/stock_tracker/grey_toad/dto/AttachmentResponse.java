@@ -6,11 +6,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter @Builder
-public class CommentResponse {
+public class AttachmentResponse {
     private UUID id;
-    private String content;
-    private UUID authorId;
-    private String authorName;
-    private UUID taskId;
+    private String originalName;
+    private String contentType;
+    private long fileSize;
+    private String uploaderName;
     private LocalDateTime createdAt;
 }

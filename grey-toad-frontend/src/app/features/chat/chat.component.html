@@ -1,47 +1,82 @@
-<div class="chat-layout" [class.channels-open]="showChannelSidebar">
+<div class="chat-layout" [class.channels-open]="showChannelSidebar" [class.thread-open]="threadMessage">
+
   <!-- Channel sidebar -->
   <div class="channel-sidebar">
     <div class="sidebar-header">
       <div style="display:flex; align-items:center; justify-content:space-between">
         <h4>Channels</h4>
-        <button class="close-ch-btn" (click)="showChannelSidebar = false">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+        <div style="display:flex;gap:6px">
+          <button class="icon-btn" (click)="openCreateModal()" title="New channel" *ngIf="isAdmin">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="close-ch-btn" (click)="showChannelSidebar = false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Team selector -->
-    <div class="team-selector">
-      <button
-        *ngFor="let t of teams"
-        class="team-tab"
-        [class.active]="selectedTeam === t.id"
-        (click)="selectTeam(t.id)"
-        [title]="t.name"
-      >
-        {{ t.name.slice(0,2).toUpperCase() }}
+    <!-- Mode toggle -->
+    <div class="mode-toggle">
+      <button class="mode-btn" [class.active]="sidebarMode === 'teams'" (click)="switchSidebarMode('teams')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="17" cy="21" r="3"/><circle cx="7" cy="21" r="3"/><path d="M10 21H14M7 18V9a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v9"/></svg>
+        Team chats
+      </button>
+      <button class="mode-btn" [class.active]="sidebarMode === 'project'" (click)="switchSidebarMode('project')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Consultations
       </button>
     </div>
 
-    <div class="channels-list">
-      <div class="empty-hint" *ngIf="!selectedTeam">← Select a team</div>
-      <div class="empty-hint" *ngIf="selectedTeam && channels.length === 0">No channels yet</div>
+    <!-- Team chats mode -->
+    <ng-container *ngIf="sidebarMode === 'teams'">
+      <div class="team-selector">
+        <button
+          *ngFor="let t of teams"
+          class="team-tab"
+          [class.active]="selectedTeam === t.id"
+          (click)="selectTeam(t.id)"
+          [title]="t.name"
+        >
+          {{ t.name.slice(0,2).toUpperCase() }}
+        </button>
+      </div>
 
-      <button
-        *ngFor="let ch of channels"
-        class="channel-btn"
-        [class.active]="selectedChannel?.id === ch.id"
-        (click)="openChannel(ch)"
-      >
-        <span class="hash">#</span>
-        <span class="ch-name">{{ ch.name }}</span>
-      </button>
-    </div>
+      <div class="channels-list">
+        <div class="empty-hint" *ngIf="!selectedTeam">← Select a team</div>
+        <div class="empty-hint" *ngIf="selectedTeam && channels.length === 0">No channels yet</div>
+        <div class="channel-row" *ngFor="let ch of channels" [class.active]="selectedChannel?.id === ch.id">
+          <button class="channel-btn" (click)="openChannel(ch)">
+            <span class="hash">#</span>
+            <span class="ch-name">{{ ch.name }}</span>
+          </button>
+          <button class="ch-del-btn" *ngIf="isAdmin" (click)="deleteChannel(ch, $event)" title="Delete channel">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Project consultations mode -->
+    <ng-container *ngIf="sidebarMode === 'project'">
+      <div class="channels-list">
+        <div class="spinner center-spinner" *ngIf="projectChannelsLoading"></div>
+        <div class="empty-hint" *ngIf="!projectChannelsLoading && projectChannels.length === 0">No consultation channels yet</div>
+        <div class="channel-row" *ngFor="let ch of projectChannels" [class.active]="selectedChannel?.id === ch.id">
+          <button class="channel-btn" (click)="openChannel(ch)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span class="ch-name">{{ ch.name }}</span>
+          </button>
+          <button class="ch-del-btn" *ngIf="isAdmin" (click)="deleteChannel(ch, $event)" title="Delete channel">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    </ng-container>
   </div>
 
   <!-- Chat area -->
   <div class="chat-area">
-    <!-- No channel selected -->
     <div class="no-channel" *ngIf="!selectedChannel">
       <div class="empty-state">
         <div class="empty-icon">💬</div>
@@ -50,18 +85,112 @@
     </div>
 
     <ng-container *ngIf="selectedChannel">
-      <!-- Header -->
       <div class="chat-header">
         <div style="display:flex; align-items:center; gap:10px">
           <button class="open-ch-btn" (click)="showChannelSidebar = true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
           <span class="chat-channel-name"># {{ selectedChannel.name }}</span>
+          <span class="scope-badge" *ngIf="selectedChannel.scope === 'PROJECT'">project</span>
+        </div>
+        <div class="channel-tabs">
+          <button class="ch-tab" [class.active]="activeTab === 'messages'" (click)="switchTab('messages')"
+            *ngIf="selectedChannel.scope !== 'PROJECT'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Messages
+          </button>
+          <button class="ch-tab" [class.active]="activeTab === 'posts'" (click)="switchTab('posts')"
+            *ngIf="selectedChannel.scope !== 'TEAM'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Posts
+          </button>
         </div>
       </div>
 
+      <!-- Posts tab (standalone Slack-like posts) -->
+      <ng-container *ngIf="activeTab === 'posts'">
+        <!-- New post input -->
+        <div class="post-composer" (click)="$event.stopPropagation()">
+          <div class="post-mention-dropdown" *ngIf="postMentionQuery !== null && postMentionUsers.length > 0">
+            <button
+              *ngFor="let u of postMentionUsers; let i = index"
+              class="mention-option"
+              [class.active]="i === postMentionIndex"
+              (mousedown)="$event.preventDefault(); insertPostMention(u)"
+            >
+              <span class="mention-avatar">{{ u.username.slice(0,2).toUpperCase() }}</span>
+              <span class="mention-name">{{ u.username }}</span>
+            </button>
+          </div>
+          <div class="post-emoji-picker" *ngIf="postEmojiPickerOpen">
+            <button *ngFor="let e of EMOJIS" class="emoji-opt" (click)="insertPostEmoji(e)">{{ e }}</button>
+          </div>
+          <div class="post-input-wrap">
+            <div class="post-author-avatar">{{ getUserName(me?.id || '').slice(0,2).toUpperCase() }}</div>
+            <div class="post-input-body">
+              <textarea
+                #postInput
+                [(ngModel)]="postText"
+                (keydown)="onPostKeydown($event)"
+                (input)="onPostInput($event)"
+                class="post-textarea"
+                placeholder="Start a new discussion... @ to mention, Shift+Enter for new line"
+                rows="3"
+              ></textarea>
+              <div class="post-actions-bar">
+                <button class="emoji-trigger" (click)="$event.stopPropagation(); postEmojiPickerOpen = !postEmojiPickerOpen" title="Emoji">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                </button>
+                <button class="post-submit-btn" (click)="submitPost()" [disabled]="!postText.trim()">
+                  Post
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Posts feed -->
+        <div class="posts-feed">
+          <div class="spinner center-spinner" *ngIf="postsLoading"></div>
+          <div class="empty-state" *ngIf="!postsLoading && posts.length === 0">
+            <div class="empty-icon">📝</div>
+            <p>No posts yet in <strong>#{{ selectedChannel.name }}</strong></p>
+            <p class="text-sm text-muted">Be the first to start a discussion</p>
+          </div>
+
+          <div class="post-card" *ngFor="let post of posts" [class.react-open]="reactPickerOpenId === post.id">
+            <div class="post-header">
+              <div class="post-avatar">{{ getUserName(post.senderId).slice(0,2).toUpperCase() }}</div>
+              <div class="post-meta">
+                <span class="post-author">{{ getUserName(post.senderId) }}</span>
+                <span class="post-time">{{ formatTime(post.createdAt) }} · {{ formatDay(post.createdAt) }}</span>
+              </div>
+              <div class="post-card-actions">
+                <div class="react-picker-mini" *ngIf="reactPickerOpenId === post.id" (click)="$event.stopPropagation()">
+                  <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(post.id, e)">{{ e }}</button>
+                </div>
+                <button class="msg-action-btn" (click)="openReactPicker(post.id, $event)" title="React">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                </button>
+                <button class="msg-action-btn" (click)="openThread(post)" title="Reply" [class.active]="threadMessage?.id === post.id">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="post-content" [innerHTML]="renderContent(post.content)"></div>
+            <div class="reactions-bar" *ngIf="post.reactions && post.reactions.length > 0">
+              <button *ngFor="let r of post.reactions" class="reaction-pill"
+                [class.reacted]="r.reactedByMe" (click)="toggleReaction(post.id, r.emoji)">
+                {{ r.emoji }} {{ r.count }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
       <!-- Messages -->
-      <div class="messages" #msgList>
+      <div class="messages" *ngIf="activeTab === 'messages'" #msgList>
         <div class="spinner center-spinner" *ngIf="loading"></div>
 
         <div class="empty-state" *ngIf="!loading && messages.length === 0">
@@ -70,16 +199,13 @@
         </div>
 
         <ng-container *ngFor="let msg of messages; let i = index">
-          <!-- Date separator -->
           <div class="date-sep" *ngIf="shouldShowDate(i)">
             <span>{{ formatDay(msg.createdAt) }}</span>
           </div>
 
-          <div class="message" [class.own]="isOwnMessage(msg)">
+          <div class="message" [class.own]="isOwnMessage(msg)" [class.thread-highlighted]="threadMessage?.id === msg.id" [class.react-open]="reactPickerOpenId === msg.id">
             <div class="user-trigger" *ngIf="!isOwnMessage(msg)">
-              <div class="msg-avatar">
-                {{ getUserName(msg.senderId).slice(0,2).toUpperCase() }}
-              </div>
+              <div class="msg-avatar">{{ getUserName(msg.senderId).slice(0,2).toUpperCase() }}</div>
               <div class="user-popover">
                 <div class="popover-header">
                   <div class="popover-avatar">{{ getUserName(msg.senderId).slice(0,2).toUpperCase() }}</div>
@@ -98,12 +224,37 @@
                 </a>
               </div>
             </div>
+
             <div class="msg-body">
               <div class="msg-meta" *ngIf="!isOwnMessage(msg)">
                 <span class="msg-author">{{ getUserName(msg.senderId) }}</span>
                 <span class="msg-time">{{ formatTime(msg.createdAt) }}</span>
               </div>
-              <div class="msg-bubble">{{ msg.content }}</div>
+
+              <div class="msg-bubble-wrap">
+                <div class="msg-bubble" [innerHTML]="renderContent(msg.content)"></div>
+
+                <div class="msg-actions" *ngIf="!msg.id.startsWith('tmp-')">
+                  <div class="react-picker-mini" *ngIf="reactPickerOpenId === msg.id" (click)="$event.stopPropagation()">
+                    <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(msg.id, e)">{{ e }}</button>
+                  </div>
+                  <button class="msg-action-btn" (click)="openReactPicker(msg.id, $event)" title="React">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="reactions-bar" *ngIf="msg.reactions && msg.reactions.length > 0">
+                <button
+                  *ngFor="let r of msg.reactions"
+                  class="reaction-pill"
+                  [class.reacted]="r.reactedByMe"
+                  (click)="toggleReaction(msg.id, r.emoji)"
+                >
+                  {{ r.emoji }} {{ r.count }}
+                </button>
+              </div>
+
               <div class="msg-time own-time" *ngIf="isOwnMessage(msg)">{{ formatTime(msg.createdAt) }}</div>
             </div>
           </div>
@@ -111,21 +262,143 @@
       </div>
 
       <!-- Input -->
-      <div class="chat-input-area">
+      <div class="chat-input-area" *ngIf="activeTab === 'messages' && selectedChannel.scope !== 'PROJECT'" (click)="$event.stopPropagation()">
+        <div class="mention-dropdown" *ngIf="mentionQuery !== null && mentionUsers.length > 0">
+          <button
+            *ngFor="let u of mentionUsers; let i = index"
+            class="mention-option"
+            [class.active]="i === mentionIndex"
+            (mousedown)="$event.preventDefault(); insertMention(u)"
+          >
+            <span class="mention-avatar">{{ u.username.slice(0,2).toUpperCase() }}</span>
+            <span class="mention-name">{{ u.username }}</span>
+          </button>
+        </div>
+
+        <div class="emoji-picker" *ngIf="emojiPickerOpen">
+          <button *ngFor="let e of EMOJIS" class="emoji-opt" (click)="insertEmoji(e)">{{ e }}</button>
+        </div>
+
         <div class="input-wrap">
+          <button class="emoji-trigger" (click)="$event.stopPropagation(); emojiPickerOpen = !emojiPickerOpen" title="Emotki">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
           <textarea
+            #msgInput
             [(ngModel)]="messageText"
             (keydown)="onKeydown($event)"
-            (input)="autoResize($event)"
+            (input)="onInput($event)"
             class="msg-input"
-            [placeholder]="'Message #' + selectedChannel.name"
+            [placeholder]="'Message #' + selectedChannel.name + ' — &#64; to mention'"
           ></textarea>
           <button class="send-btn" (click)="send()" [disabled]="!messageText.trim()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
-        <p class="input-hint text-sm text-muted">Enter to send · Shift+Enter for new line</p>
+        <p class="input-hint text-sm text-muted">Enter to send · Shift+Enter for new line · &#64; to mention</p>
       </div>
     </ng-container>
+  </div>
+
+  <!-- Thread panel -->
+  <div class="thread-panel" *ngIf="threadMessage">
+    <div class="thread-header">
+      <span class="thread-title">{{ threadMessage.type === 'POST' ? 'Replies' : 'Thread' }}</span>
+      <button class="thread-close-btn" (click)="closeThread()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="thread-original">
+      <div class="thread-original-author">
+        <div class="thread-avatar">{{ getUserName(threadMessage.senderId).slice(0,2).toUpperCase() }}</div>
+        <span class="thread-author-name">{{ getUserName(threadMessage.senderId) }}</span>
+        <span class="msg-time">{{ formatTime(threadMessage.createdAt) }}</span>
+      </div>
+      <div class="msg-bubble thread-orig-bubble" [innerHTML]="renderContent(threadMessage.content)"></div>
+    </div>
+
+    <div class="thread-sep">
+      <span>{{ threadReplies.length }} {{ threadReplies.length === 1 ? 'reply' : 'replies' }}</span>
+    </div>
+
+    <div class="thread-replies">
+      <div class="spinner" *ngIf="threadLoading" style="margin: 16px auto"></div>
+      <div class="thread-reply" *ngFor="let r of threadReplies">
+        <div class="thread-avatar">{{ getUserName(r.senderId).slice(0,2).toUpperCase() }}</div>
+        <div class="thread-reply-body">
+          <div class="thread-reply-meta">
+            <span class="msg-author">{{ getUserName(r.senderId) }}</span>
+            <span class="msg-time">{{ formatTime(r.createdAt) }}</span>
+          </div>
+          <div class="msg-bubble" [innerHTML]="renderContent(r.content)"></div>
+        </div>
+      </div>
+      <div class="empty-hint" *ngIf="!threadLoading && threadReplies.length === 0">No replies yet</div>
+    </div>
+
+    <div class="thread-input-area">
+      <input
+        [(ngModel)]="threadInput"
+        (keydown.enter)="sendReply()"
+        class="form-input thread-input"
+        placeholder="Reply in thread..."
+      />
+      <button class="send-btn" (click)="sendReply()" [disabled]="!threadInput.trim()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Create channel modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>New Channel</h3>
+      <button class="icon-btn" (click)="closeCreateModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Channel name</label>
+      <input [(ngModel)]="createName" class="form-input" placeholder="e.g. design-feedback" (keydown.enter)="createChannel()" autofocus />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Scope</label>
+      <div class="scope-selector">
+        <button class="scope-opt" [class.active]="createScope === 'TEAM'" (click)="createScope = 'TEAM'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="17" cy="21" r="3"/><circle cx="7" cy="21" r="3"/><path d="M10 21H14M7 18V9a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v9"/></svg>
+          <div>
+            <div class="scope-opt-title">Team chat</div>
+            <div class="scope-opt-desc">Visible only to this team's members</div>
+          </div>
+        </button>
+        <button class="scope-opt" [class.active]="createScope === 'PROJECT'" (click)="createScope = 'PROJECT'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <div>
+            <div class="scope-opt-title">Project consultation</div>
+            <div class="scope-opt-desc">Visible to all project members across teams</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group" *ngIf="teams.length > 1">
+      <label class="form-label">Team</label>
+      <select [(ngModel)]="createTeamId" class="form-input">
+        <option *ngFor="let t of teams" [value]="t.id">{{ t.name }}</option>
+      </select>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="closeCreateModal()">Cancel</button>
+      <button class="btn-primary" (click)="createChannel()" [disabled]="!createName.trim() || creating">
+        <span *ngIf="!creating">Create channel</span>
+        <span *ngIf="creating">Creating...</span>
+      </button>
+    </div>
   </div>
 </div>

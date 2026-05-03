@@ -3,9 +3,9 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { catchError, forkJoin, of } from 'rxjs';
-import { TaskService, UserService } from '../../../core/services/api.service';
+import { TaskService, UserService, AttachmentService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Task, Comment, User } from '../../../shared/models';
+import { Task, Comment, User, TimeEntry, Attachment } from '../../../shared/models';
 
 @Component({
   standalone: true,
@@ -18,13 +18,22 @@ export class TaskDetailComponent implements OnInit {
   task: Task | null = null;
   comments: Comment[] = [];
   users: User[] = [];
+  timeEntries: TimeEntry[] = [];
+  totalMinutes = 0;
+  attachments: Attachment[] = [];
+
   loading = true;
   saving = false;
+  savingTime = false;
+  uploading = false;
 
   commentForm = this.fb.group({ content: ['', Validators.required] });
+  timeForm = this.fb.group({
+    minutes: [null as number | null, [Validators.required, Validators.min(1)]],
+    description: ['']
+  });
 
   statuses = ['TODO', 'IN_PROGRESS', 'DONE'];
-
   editingDeadline = false;
   deadlineValue = '';
 
@@ -32,6 +41,7 @@ export class TaskDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private taskService: TaskService,
     private userService: UserService,
+    private attachmentService: AttachmentService,
     private auth: AuthService,
     private fb: FormBuilder
   ) {}
@@ -41,14 +51,20 @@ export class TaskDetailComponent implements OnInit {
     const navTask = window.history.state?.task as Task | undefined;
 
     forkJoin({
-      users: this.userService.getAll().pipe(catchError(() => of([] as User[]))),
-      comments: this.taskService.getComments(id).pipe(catchError(() => of([] as Comment[]))),
-      task: navTask?.id === id ? of(navTask) : this.taskService.getById(id).pipe(catchError(() => of(null)))
+      users:        this.userService.getAll().pipe(catchError(() => of([] as User[]))),
+      comments:     this.taskService.getComments(id).pipe(catchError(() => of([] as Comment[]))),
+      task:         navTask?.id === id ? of(navTask) : this.taskService.getById(id).pipe(catchError(() => of(null))),
+      timeEntries:  this.taskService.getTimeEntries(id).pipe(catchError(() => of([] as TimeEntry[]))),
+      totalMinutes: this.taskService.getTotalMinutes(id).pipe(catchError(() => of(0))),
+      attachments:  this.taskService.getAttachments(id).pipe(catchError(() => of([] as Attachment[])))
     }).subscribe({
-      next: ({ users, comments, task }) => {
+      next: ({ users, comments, task, timeEntries, totalMinutes, attachments }) => {
         this.users = users;
         this.comments = comments;
         this.task = task;
+        this.timeEntries = timeEntries;
+        this.totalMinutes = totalMinutes;
+        this.attachments = attachments;
         this.loading = false;
       },
       error: () => { this.loading = false; }
@@ -74,13 +90,58 @@ export class TaskDetailComponent implements OnInit {
       content: this.commentForm.value.content!,
       authorId: me.id
     }).subscribe({
-      next: c => {
-        this.comments.push(c);
-        this.commentForm.reset();
-        this.saving = false;
-      },
+      next: c => { this.comments.push(c); this.commentForm.reset(); this.saving = false; },
       error: () => { this.saving = false; }
     });
+  }
+
+  submitTimeEntry() {
+    if (this.timeForm.invalid || !this.task) return;
+    const me = this.auth.currentUser$.value;
+    if (!me) return;
+    this.savingTime = true;
+    this.taskService.logTime(this.task.id, {
+      userId: me.id,
+      minutes: this.timeForm.value.minutes!,
+      description: this.timeForm.value.description || undefined,
+      date: new Date().toISOString().slice(0, 10)
+    }).subscribe({
+      next: entry => {
+        this.timeEntries.push(entry);
+        this.totalMinutes += entry.minutes;
+        this.timeForm.reset();
+        this.savingTime = false;
+      },
+      error: () => { this.savingTime = false; }
+    });
+  }
+
+  onFileSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.task) return;
+    this.uploading = true;
+    this.taskService.uploadAttachment(this.task.id, file).subscribe({
+      next: att => { this.attachments.push(att); this.uploading = false; input.value = ''; },
+      error: () => { this.uploading = false; }
+    });
+  }
+
+  downloadUrl(id: string): string {
+    return this.attachmentService.getDownloadUrl(id);
+  }
+
+  formatMinutes(m: number): string {
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    return min > 0 ? `${h}h ${min}m` : `${h}h`;
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
   }
 
   changePriority(priority: string) {
@@ -152,7 +213,7 @@ export class TaskDetailComponent implements OnInit {
   }
 
   statusLabel(s: string) {
-    return { TODO: 'To Do', IN_PROGRESS: 'In Progress', DONE: 'Done' }[s] || s;
+    return ({ TODO: 'To Do', IN_PROGRESS: 'In Progress', DONE: 'Done' } as any)[s] || s;
   }
 
   formatDate(d?: string) {

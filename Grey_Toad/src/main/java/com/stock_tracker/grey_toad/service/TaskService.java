@@ -31,19 +31,22 @@ public class TaskService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final AuditLogService auditLogService;
 
     public TaskService(TaskRepository taskRepository,
                        ProjectRepository projectRepository,
                        UserRepository userRepository,
                        TeamMemberRepository teamMemberRepository,
                        TeamRepository teamRepository,
-                       SimpMessagingTemplate messagingTemplate) {
+                       SimpMessagingTemplate messagingTemplate,
+                       AuditLogService auditLogService) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.teamRepository = teamRepository;
         this.messagingTemplate = messagingTemplate;
+        this.auditLogService = auditLogService;
     }
 
     public TaskResponse create(CreateTaskRequest request, String userEmail) {
@@ -77,6 +80,9 @@ public class TaskService {
             sendTaskNotification(saved);
         }
 
+        auditLogService.log(userEmail, project.getId(), "TASK_CREATED", "TASK",
+                saved.getId().toString(), "Created task #" + saved.getCaseNumber() + ": " + saved.getTitle());
+
         return broadcastAndReturn(saved);
     }
 
@@ -101,11 +107,13 @@ public class TaskService {
     public TaskResponse changeStatus(UUID taskId, String status) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
+        String old = task.getStatus();
         task.setStatus(status);
-        if ("DONE".equals(status)) {
-            task.setArchived(true);
-        }
-        return broadcastAndReturn(taskRepository.save(task));
+        if ("DONE".equals(status)) task.setArchived(true);
+        Task saved = taskRepository.save(task);
+        auditLogService.log(null, task.getProject().getId(), "STATUS_CHANGED", "TASK",
+                taskId.toString(), "#" + task.getCaseNumber() + " status: " + old + " → " + status);
+        return broadcastAndReturn(saved);
     }
 
     public TaskResponse assign(UUID taskId, UUID userId) {
@@ -116,6 +124,8 @@ public class TaskService {
         task.setAssignee(user);
         Task saved = taskRepository.save(task);
         sendTaskNotification(saved);
+        auditLogService.log(null, task.getProject().getId(), "ASSIGNED", "TASK",
+                taskId.toString(), "#" + task.getCaseNumber() + " assigned to " + user.getUsername());
         return broadcastAndReturn(saved);
     }
 
@@ -139,6 +149,8 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setPriority(priority);
+        auditLogService.log(userEmail, task.getProject().getId(), "PRIORITY_CHANGED", "TASK",
+                taskId.toString(), "#" + task.getCaseNumber() + " priority set to " + priority);
         return broadcastAndReturn(taskRepository.save(task));
     }
 

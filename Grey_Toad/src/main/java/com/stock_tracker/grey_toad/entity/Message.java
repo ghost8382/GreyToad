@@ -30,4 +30,11 @@ public class Message {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // null = top-level; non-null = reply in a thread
+    private UUID parentId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(50) not null default 'CHAT'")
+    private MessageType type = MessageType.CHAT;
 }

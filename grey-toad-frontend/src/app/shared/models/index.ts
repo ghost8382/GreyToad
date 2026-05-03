@@ -39,20 +39,36 @@ export interface CreateTaskRequest {
 }
 
 // Comment
-export interface Comment { id: string; content: string; authorId: string; taskId: string; createdAt: string; }
+export interface Comment { id: string; content: string; authorId: string; authorName?: string; taskId: string; createdAt: string; }
 export interface CreateCommentRequest { content: string; authorId: string; }
 
+// Time tracking
+export interface TimeEntry { id: string; taskId: string; userId: string; userName: string; minutes: number; description?: string; date: string; }
+export interface CreateTimeEntryRequest { userId: string; minutes: number; description?: string; date: string; }
+
+// Attachments
+export interface Attachment { id: string; originalName: string; contentType: string; fileSize: number; uploaderName: string; createdAt: string; }
+
+// Audit log
+export interface AuditLogEntry { id: string; actorName: string; action: string; entityType: string; entityId: string; details: string; createdAt: string; }
+
 // Channel
-export interface Channel { id: string; name: string; teamId: string; }
-export interface CreateChannelRequest { name: string; teamId: string; }
+export type ChannelScope = 'TEAM' | 'PROJECT';
+export interface Channel { id: string; name: string; teamId: string; projectId?: string; scope?: ChannelScope; }
+export interface CreateChannelRequest { name: string; teamId: string; scope?: ChannelScope; }
+
+// Message reaction
+export interface MessageReaction { emoji: string; count: number; reactedByMe: boolean; }
 
 // Channel Message
-export interface Message { id: string; content: string; senderId: string; channelId: string; createdAt: string; }
+export type MessageType = 'CHAT' | 'POST';
+export interface Message { id: string; content: string; senderId: string; senderName?: string; channelId: string; parentId?: string; createdAt: string; reactions?: MessageReaction[]; replyCount?: number; type?: MessageType; }
 
 // Direct Message
 export interface DirectMessage {
   id: string; content: string;
   senderId: string; receiverId: string; createdAt: string;
+  reactions?: MessageReaction[];
 }
 
 // Task Notification
@@ -67,4 +83,5 @@ export interface AppNotification {
   type: 'TASK_ASSIGNED' | 'DM' | 'CHANNEL_MESSAGE';
   title: string;
   body: string;
+  projectId?: string;
 }

@@ -5,6 +5,7 @@ import com.stock_tracker.grey_toad.data.TeamMemberRepository;
 import com.stock_tracker.grey_toad.data.TeamRepository;
 import com.stock_tracker.grey_toad.data.UserRepository;
 import com.stock_tracker.grey_toad.entity.Channel;
+import com.stock_tracker.grey_toad.entity.ChannelScope;
 import com.stock_tracker.grey_toad.entity.Team;
 import com.stock_tracker.grey_toad.entity.User;
 import com.stock_tracker.grey_toad.dto.ChannelResponse;
@@ -33,19 +34,16 @@ public class ChannelService {
     }
 
     public ChannelResponse create(CreateChannelRequest request) {
-
         UUID teamId = UUID.fromString(request.getTeamId());
-
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new NotFoundException("Team not found"));
 
         Channel channel = new Channel();
         channel.setName(request.getName());
         channel.setTeam(team);
+        channel.setScope(request.getScope() != null ? request.getScope() : ChannelScope.TEAM);
 
-        Channel saved = channelRepository.save(channel);
-
-        return mapToResponse(saved);
+        return mapToResponse(channelRepository.save(channel));
     }
 
     public List<ChannelResponse> getByTeam(UUID teamId, String userEmail) {
@@ -63,11 +61,30 @@ public class ChannelService {
                 .toList();
     }
 
+    public void delete(UUID channelId) {
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new NotFoundException("Channel not found"));
+        channel.setDeleted(true);
+        channelRepository.save(channel);
+    }
+
+    public List<ChannelResponse> getByProject(UUID projectId) {
+        return channelRepository.findByTeam_Project_IdAndScope(projectId, ChannelScope.PROJECT)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     private ChannelResponse mapToResponse(Channel channel) {
+        UUID projectId = channel.getTeam() != null && channel.getTeam().getProject() != null
+                ? channel.getTeam().getProject().getId()
+                : null;
         return ChannelResponse.builder()
                 .id(channel.getId())
                 .name(channel.getName())
                 .teamId(channel.getTeam().getId())
+                .projectId(projectId)
+                .scope(channel.getScope())
                 .build();
     }
 }

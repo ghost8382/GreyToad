@@ -1,6 +1,5 @@
 package com.stock_tracker.grey_toad.dto;
 
-import com.stock_tracker.grey_toad.entity.ChannelScope;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -8,11 +7,8 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class ChannelResponse {
-
+public class RoleTemplateResponse {
     private UUID id;
     private String name;
-    private UUID teamId;
-    private UUID projectId;
-    private ChannelScope scope;
+    private String permissionLevel;
 }

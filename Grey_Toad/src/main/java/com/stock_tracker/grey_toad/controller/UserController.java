@@ -66,4 +66,12 @@ public class UserController {
         if (principal == null) throw new RuntimeException("Unauthorized");
         return userService.setRole(id, role, principal.getName());
     }
+
+    @PatchMapping("/{id}/job-title")
+    public UserResponse setJobTitle(@PathVariable UUID id,
+                                    @RequestParam(required = false) String jobTitle,
+                                    Principal principal) {
+        if (principal == null) throw new RuntimeException("Unauthorized");
+        return userService.setJobTitle(id, jobTitle, principal.getName());
+    }
 }

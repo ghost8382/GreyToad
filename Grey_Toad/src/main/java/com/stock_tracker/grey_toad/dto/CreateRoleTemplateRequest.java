@@ -1,19 +1,15 @@
 package com.stock_tracker.grey_toad.dto;
 
-import com.stock_tracker.grey_toad.entity.ChannelScope;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class CreateChannelRequest {
+public class CreateRoleTemplateRequest {
 
     @NotBlank
     private String name;
 
-    @NotBlank
-    private String teamId;
-
-    private ChannelScope scope = ChannelScope.TEAM;
+    private String permissionLevel = "USER";
 }

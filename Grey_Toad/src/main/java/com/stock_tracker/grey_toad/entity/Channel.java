@@ -25,6 +25,10 @@ public class Channel {
     @JoinColumn(nullable = false)
     private Team team;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(50) not null default 'TEAM'")
+    private ChannelScope scope = ChannelScope.TEAM;
+
     @Column(columnDefinition = "boolean default false")
     private Boolean deleted;
 }
