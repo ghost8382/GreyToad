@@ -9,4 +9,5 @@ public class AppNotificationDto {
     private String type;  // TASK_ASSIGNED | DM | CHANNEL_MESSAGE
     private String title;
     private String body;
+    private String projectId;
 }

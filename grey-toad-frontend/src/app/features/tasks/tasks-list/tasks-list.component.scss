@@ -394,6 +394,31 @@
 /* Archived badge */
 .badge-archived { background: rgba(160,122,106,0.15); color: #a07a6a; border: 1px solid #a07a6a40; }
 
+/* Pending acceptance bar */
+.pending-bar {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  background: rgba(232,164,74,0.08); border: 1px solid rgba(232,164,74,0.35);
+  border-radius: var(--radius-sm); padding: 5px 10px;
+}
+.pending-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; color: #e8a44a; white-space: nowrap;
+}
+.pa-accept {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(74,154,106,0.15); border: 1px solid rgba(74,154,106,0.5);
+  border-radius: var(--radius-sm); color: #4a9a6a; font-size: 11px; font-weight: 600;
+  padding: 3px 8px; cursor: pointer; transition: all var(--transition); font-family: var(--font);
+  &:hover { background: rgba(74,154,106,0.25); border-color: #4a9a6a; }
+}
+.pa-reject {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(192,57,43,0.1); border: 1px solid rgba(192,57,43,0.4);
+  border-radius: var(--radius-sm); color: #c0392b; font-size: 11px; font-weight: 600;
+  padding: 3px 8px; cursor: pointer; transition: all var(--transition); font-family: var(--font);
+  &:hover { background: rgba(192,57,43,0.2); border-color: #c0392b; }
+}
+
 /* SLA popup */
 .sla-popup {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 800;

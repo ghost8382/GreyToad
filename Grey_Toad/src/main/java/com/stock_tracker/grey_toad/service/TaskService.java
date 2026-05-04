@@ -117,7 +117,6 @@ public class TaskService {
         String old = task.getStatus();
         task.setStatus(status);
         if ("DONE".equals(status)) {
-            task.setArchived(true);
             closeOpenTimeEntry(task.getId());
         }
         Task saved = taskRepository.save(task);
@@ -283,6 +282,7 @@ public class TaskService {
                 .type("TASK_ASSIGNED")
                 .title("Przypisano Ci zadanie")
                 .body("#" + task.getCaseNumber() + " " + task.getTitle())
+                .projectId(task.getProject() != null ? task.getProject().getId().toString() : null)
                 .build();
         messagingTemplate.convertAndSendToUser(
                 task.getAssignee().getEmail(),

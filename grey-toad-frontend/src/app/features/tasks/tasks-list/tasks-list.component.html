@@ -281,6 +281,23 @@
         </div>
       </div>
 
+      <!-- Pending acceptance inline actions -->
+      <div class="pending-bar" *ngIf="task.acceptanceStatus === 'PENDING' && task.assigneeId === me?.id"
+           (click)="$event.preventDefault(); $event.stopPropagation()">
+        <span class="pending-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Wymaga akceptacji
+        </span>
+        <button class="pa-accept" (click)="acceptTask(task, $event)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Przyjmij
+        </button>
+        <button class="pa-reject" (click)="rejectTask(task, $event)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Odrzuć
+        </button>
+      </div>
+
       <div class="task-right">
         <span class="priority-badge" [class]="priorityClass(task.priority)" [title]="task.priority || 'MEDIUM'">
           {{ priorityLabel(task.priority) }}

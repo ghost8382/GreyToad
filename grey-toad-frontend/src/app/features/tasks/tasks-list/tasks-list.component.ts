@@ -186,7 +186,23 @@ export class TasksListComponent implements OnInit, OnDestroy {
   changeStatus(task: Task, status: string) {
     this.taskService.changeStatus(task.id, status).subscribe(updated => {
       const idx = this.tasks.findIndex(t => t.id === task.id);
-      if (idx !== -1) this.tasks[idx] = updated;
+      if (idx !== -1) { this.tasks[idx] = updated; this.tasks = [...this.tasks]; }
+    });
+  }
+
+  acceptTask(task: Task, e: Event) {
+    e.preventDefault(); e.stopPropagation();
+    this.taskService.accept(task.id).subscribe(updated => {
+      const idx = this.tasks.findIndex(t => t.id === task.id);
+      if (idx !== -1) { this.tasks[idx] = updated; this.tasks = [...this.tasks]; }
+    });
+  }
+
+  rejectTask(task: Task, e: Event) {
+    e.preventDefault(); e.stopPropagation();
+    this.taskService.reject(task.id).subscribe(updated => {
+      const idx = this.tasks.findIndex(t => t.id === task.id);
+      if (idx !== -1) { this.tasks[idx] = updated; this.tasks = [...this.tasks]; }
     });
   }
 
@@ -268,6 +284,7 @@ export class TasksListComponent implements OnInit, OnDestroy {
   get canCreateTask() { return this.auth.isAdminOrLeader; }
   get isAdmin() { return this.auth.isAdmin; }
   get isAdminOrLeader() { return this.auth.isAdminOrLeader; }
+  get me() { return this.auth.currentUser$.value; }
 
   getUserName(task: Task) {
     if (task.assigneeName) return task.assigneeName;
