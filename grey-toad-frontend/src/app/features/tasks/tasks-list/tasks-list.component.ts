@@ -3,7 +3,7 @@ import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angu
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { TaskService, ProjectService, UserService } from '../../../core/services/api.service';
+import { TaskService, UserService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProjectContextService } from '../../../core/services/project-context.service';
 import { ChatWsService } from '../../../core/services/chat-ws.service';
@@ -54,7 +54,6 @@ export class TasksListComponent implements OnInit, OnDestroy {
 
   constructor(
     private taskService: TaskService,
-    private projectService: ProjectService,
     private userService: UserService,
     private auth: AuthService,
     private ws: ChatWsService,
@@ -71,19 +70,27 @@ export class TasksListComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.auth.currentUser$.subscribe(u => {
       this.me = u;
-      // Workers default to seeing only their own tasks
       if (u && u.role !== 'ADMIN' && u.role !== 'LEADER') {
         this.filterAssignedToMe = true;
       }
     });
     this.ws.connect();
-    this.projectService.getAll().subscribe(projects => {
-      this.projects = projects;
-      this.route.queryParams.subscribe(p => {
-        const toSelect = p['projectId'] || this.projectContext.selected?.id || '';
-        if (toSelect) this.onProjectChange(toSelect);
-      });
+
+    // Update project selector list
+    this.projectContext.projects$.subscribe(projects => { this.projects = projects; });
+
+    // Load tasks from URL param (deep-link)
+    this.route.queryParams.subscribe(p => {
+      if (p['projectId']) this.onProjectChange(p['projectId']);
     });
+
+    // Load tasks when project context resolves or user switches project
+    this.projectContext.selected$.subscribe(selected => {
+      if (selected?.id && selected.id !== this.selectedProject) {
+        this.onProjectChange(selected.id);
+      }
+    });
+
     this.userService.getAll().subscribe(u => this.users = u);
   }
 
