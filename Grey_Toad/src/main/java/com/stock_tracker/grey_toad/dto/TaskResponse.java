@@ -26,4 +26,8 @@ public class TaskResponse {
     private boolean archived;
     private String priority;
     private String type;
+    private String acceptanceStatus;
+    private int totalWorkedMinutes;
+    private boolean workingSessionActive;
+    private LocalDateTime workStartedAt;
 }

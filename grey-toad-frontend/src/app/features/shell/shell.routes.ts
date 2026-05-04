@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { ShellComponent } from './shell.component';
+import { AdminGuard } from '../../core/guards/admin.guard';
 
 export const SHELL_ROUTES: Routes = [
   {
@@ -16,6 +17,7 @@ export const SHELL_ROUTES: Routes = [
       },
       {
         path: 'projects',
+        canActivate: [AdminGuard],
         loadComponent: () => import('../projects/projects.component').then(m => m.ProjectsComponent)
       },
       {
@@ -37,6 +39,10 @@ export const SHELL_ROUTES: Routes = [
       {
         path: 'admin',
         loadComponent: () => import('../admin/admin.component').then(m => m.AdminComponent)
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('../reports/reports.component').then(m => m.ReportsComponent)
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]

@@ -113,6 +113,18 @@ public class MessageService {
                 .toList();
     }
 
+    public MessageResponse resolvePost(UUID messageId, String userEmail) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new NotFoundException("Post not found"));
+        User user = findUserByEmail(userEmail);
+        if (!"ADMIN".equals(user.getRole()) && !message.getSender().getId().equals(user.getId())) {
+            throw new ForbiddenException("Only admin or post author can resolve");
+        }
+        message.setResolved(!message.isResolved());
+        Message saved = messageRepository.save(message);
+        return mapToResponse(saved, 0, reactionRepository.findByMessageId(saved.getId()), user.getId());
+    }
+
     public MessageResponse createPost(UUID channelId, String senderEmail, String content) {
         User sender = findUserByEmail(senderEmail);
         Channel channel = channelRepository.findById(channelId)
@@ -173,6 +185,7 @@ public class MessageService {
                 .replyCount(replyCount)
                 .reactions(reactionResponses)
                 .type(message.getType() != null ? message.getType() : MessageType.CHAT)
+                .resolved(message.isResolved())
                 .build();
     }
 }

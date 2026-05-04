@@ -35,7 +35,7 @@
           <div class="user-last-msg" *ngIf="getLastMessage(u)">{{ getLastMessage(u) }}</div>
           <div class="user-email text-muted" *ngIf="!getLastMessage(u)">{{ u.email }}</div>
         </div>
-        <div class="has-history-dot" *ngIf="hasUnread(u)"></div>
+        <span class="unread-badge" *ngIf="hasUnread(u)">{{ getUnreadCount(u) > 99 ? '99+' : getUnreadCount(u) }}</span>
       </button>
     </div>
   </div>
@@ -81,10 +81,26 @@
             <span>{{ formatDay(msg.createdAt) }}</span>
           </div>
 
-          <div class="message" [class.own]="isOwn(msg)">
+          <div class="message" [class.own]="isOwn(msg)" [class.react-open]="reactPickerOpenId === msg.id">
             <div class="msg-avatar" *ngIf="!isOwn(msg)" [class]="avatarClass(selectedUser.username)">{{ getInitials(selectedUser.username) }}</div>
             <div class="msg-body">
-              <div class="msg-bubble">{{ msg.content }}</div>
+              <div class="msg-bubble-wrap">
+                <div class="msg-bubble" [innerHTML]="renderContent(msg.content)"></div>
+                <div class="msg-actions" *ngIf="!msg.id.startsWith('tmp-')">
+                  <div class="react-picker-mini" *ngIf="reactPickerOpenId === msg.id" (click)="$event.stopPropagation()">
+                    <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(msg.id, e)">{{ e }}</button>
+                  </div>
+                  <button class="msg-action-btn" (click)="openReactPicker(msg.id, $event)" title="React">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="reactions-bar" *ngIf="msg.reactions && msg.reactions.length > 0">
+                <button *ngFor="let r of msg.reactions" class="reaction-pill"
+                  [class.reacted]="r.reactedByMe" (click)="toggleReaction(msg.id, r.emoji)">
+                  {{ r.emoji }} {{ r.count }}
+                </button>
+              </div>
               <div class="msg-time">{{ formatTime(msg.createdAt) }}</div>
             </div>
           </div>
@@ -92,20 +108,42 @@
       </div>
 
       <!-- Input -->
-      <div class="input-area">
+      <div class="input-area" (click)="$event.stopPropagation()">
+        <!-- Mention dropdown -->
+        <div class="mention-dropdown" *ngIf="mentionQuery !== null && mentionUsers.length > 0">
+          <button
+            *ngFor="let u of mentionUsers; let i = index"
+            class="mention-option"
+            [class.active]="i === mentionIndex"
+            (mousedown)="$event.preventDefault(); insertMention(u)"
+          >
+            <span class="mention-avatar">{{ u.username.slice(0,2).toUpperCase() }}</span>
+            <span class="mention-name">{{ u.username }}</span>
+          </button>
+        </div>
+
+        <!-- Emoji picker -->
+        <div class="emoji-picker" *ngIf="emojiPickerOpen">
+          <button *ngFor="let e of EMOJIS" class="emoji-opt" (click)="insertEmoji(e)">{{ e }}</button>
+        </div>
+
         <div class="input-wrap">
+          <button class="emoji-trigger" (click)="$event.stopPropagation(); emojiPickerOpen = !emojiPickerOpen" title="Emotki">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
           <textarea
+            #msgInput
             [(ngModel)]="messageText"
             (keydown)="onKeydown($event)"
+            (input)="onInput($event)"
             class="msg-input"
-            [placeholder]="'Message ' + selectedUser.username + '...'"
-            rows="1"
+            [placeholder]="'Message ' + selectedUser.username + ' — &#64; to mention'"
           ></textarea>
           <button class="send-btn" (click)="send()" [disabled]="!messageText.trim() || !wsReady">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
-        <p class="input-hint text-sm text-muted">Enter to send · Shift+Enter for new line</p>
+        <p class="input-hint text-sm text-muted">Enter to send · Shift+Enter for new line · &#64; to mention</p>
       </div>
     </ng-container>
   </div>

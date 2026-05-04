@@ -31,6 +31,10 @@ export interface Task {
   assigneeId?: string; assigneeName?: string; projectId: string; projectName?: string;
   teamNames?: string[]; deadline?: string; slaDeadline?: string; archived?: boolean;
   priority?: string; type?: string;
+  acceptanceStatus?: 'PENDING' | 'ACCEPTED' | null;
+  totalWorkedMinutes?: number;
+  workingSessionActive?: boolean;
+  workStartedAt?: string;
 }
 export interface CreateTaskRequest {
   title: string; description?: string;
@@ -62,7 +66,7 @@ export interface MessageReaction { emoji: string; count: number; reactedByMe: bo
 
 // Channel Message
 export type MessageType = 'CHAT' | 'POST';
-export interface Message { id: string; content: string; senderId: string; senderName?: string; channelId: string; parentId?: string; createdAt: string; reactions?: MessageReaction[]; replyCount?: number; type?: MessageType; }
+export interface Message { id: string; content: string; senderId: string; senderName?: string; channelId: string; parentId?: string; createdAt: string; reactions?: MessageReaction[]; replyCount?: number; type?: MessageType; resolved?: boolean; }
 
 // Direct Message
 export interface DirectMessage {

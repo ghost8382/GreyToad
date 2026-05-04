@@ -22,7 +22,7 @@ public class TimeEntry {
     private User user;
 
     @Column(nullable = false)
-    private int minutes;
+    private int minutes = 0;
 
     private String description;
 
@@ -31,4 +31,8 @@ public class TimeEntry {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // auto-tracking: set on accept, cleared/computed on close
+    private LocalDateTime startedAt;
+    private LocalDateTime endedAt;
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -14,7 +14,7 @@ import { Task, Comment, User, TimeEntry, Attachment } from '../../../shared/mode
   styleUrls: ['./task-detail.component.scss'],
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink]
 })
-export class TaskDetailComponent implements OnInit {
+export class TaskDetailComponent implements OnInit, OnDestroy {
   task: Task | null = null;
   comments: Comment[] = [];
   users: User[] = [];
@@ -26,6 +26,8 @@ export class TaskDetailComponent implements OnInit {
   saving = false;
   savingTime = false;
   uploading = false;
+  liveTimerDisplay = '';
+  private timerInterval: any;
 
   commentForm = this.fb.group({ content: ['', Validators.required] });
   timeForm = this.fb.group({
@@ -66,9 +68,52 @@ export class TaskDetailComponent implements OnInit {
         this.totalMinutes = totalMinutes;
         this.attachments = attachments;
         this.loading = false;
+        this.startLiveTimer();
       },
       error: () => { this.loading = false; }
     });
+  }
+
+  ngOnDestroy() { this.stopLiveTimer(); }
+
+  acceptTask() {
+    if (!this.task) return;
+    this.taskService.accept(this.task.id).subscribe(t => {
+      this.task = t;
+      this.startLiveTimer();
+    });
+  }
+
+  rejectTask() {
+    if (!this.task) return;
+    this.taskService.reject(this.task.id).subscribe(t => {
+      this.task = t;
+      this.stopLiveTimer();
+      this.liveTimerDisplay = '';
+    });
+  }
+
+  private startLiveTimer() {
+    this.stopLiveTimer();
+    if (this.task?.workingSessionActive && this.task.workStartedAt) {
+      this.updateTimer();
+      this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+    }
+  }
+
+  private stopLiveTimer() {
+    if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
+  }
+
+  private updateTimer() {
+    if (!this.task?.workStartedAt) return;
+    const elapsed = Date.now() - new Date(this.task.workStartedAt).getTime();
+    const h = Math.floor(elapsed / 3600000);
+    const m = Math.floor((elapsed % 3600000) / 60000);
+    const s = Math.floor((elapsed % 60000) / 1000);
+    this.liveTimerDisplay = h > 0
+      ? `${h}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`
+      : `${m}m ${s.toString().padStart(2,'0')}s`;
   }
 
   changeStatus(status: string) {
@@ -204,6 +249,7 @@ export class TaskDetailComponent implements OnInit {
     return ({ TASK: 'Task', BUG: 'Bug', FEATURE: 'Feature', STORY: 'Story' } as any)[t || 'TASK'] || t;
   }
 
+  get me() { return this.auth.currentUser$.value; }
   get isAdmin() { return this.auth.isAdmin; }
   get isAdminOrLeader() { return this.auth.isAdminOrLeader; }
 

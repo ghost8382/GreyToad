@@ -50,4 +50,10 @@ public class Task {
 
     @Column(columnDefinition = "varchar(20) default 'TASK'")
     private String type = "TASK"; // BUG | FEATURE | TASK | STORY
+
+    // null = unassigned, PENDING = awaiting acceptance, ACCEPTED = in progress
+    @Column(columnDefinition = "varchar(20)")
+    private String acceptanceStatus;
+
+    private java.time.LocalDateTime workStartedAt;
 }

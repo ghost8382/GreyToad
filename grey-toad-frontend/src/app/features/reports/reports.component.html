@@ -1,0 +1,141 @@
+<div class="page reports-page fade-in">
+  <div class="page-header">
+    <h2>Reports<span *ngIf="projectName"> — {{ projectName }}</span></h2>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && noProject">
+    <div class="empty-icon">📊</div>
+    <p>Select a project to view reports.</p>
+  </div>
+
+  <ng-container *ngIf="!loading && !noProject">
+    <!-- Summary cards -->
+    <div class="stats-grid">
+      <div class="stat-card card">
+        <div class="stat-label">Total Tasks</div>
+        <div class="stat-value">{{ total }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">Done</div>
+        <div class="stat-value done">{{ doneCount }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value progress">{{ progressCount }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">To Do</div>
+        <div class="stat-value todo">{{ todoCount }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">Archived</div>
+        <div class="stat-value muted">{{ archivedCount }}</div>
+      </div>
+      <div class="stat-card card">
+        <div class="stat-label">Unassigned</div>
+        <div class="stat-value muted">{{ unassignedCount }}</div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="total === 0">
+      <div class="empty-icon">📋</div>
+      <p>No tasks in this project yet.</p>
+    </div>
+
+    <div class="reports-grid" *ngIf="total > 0">
+      <!-- Status distribution -->
+      <div class="report-card card">
+        <h4 class="report-title">Status Distribution</h4>
+        <div class="bar-chart">
+          <div *ngFor="let s of statusStats" class="bar-row">
+            <div class="bar-label">{{ s.label }}</div>
+            <div class="bar-track">
+              <div class="bar-fill" [class]="s.cls" [style.width.%]="s.pct"></div>
+            </div>
+            <div class="bar-count">{{ s.count }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority distribution -->
+      <div class="report-card card">
+        <h4 class="report-title">Priority Distribution</h4>
+        <div class="bar-chart">
+          <div *ngFor="let p of priorityStats" class="bar-row">
+            <div class="bar-label">{{ p.label }}</div>
+            <div class="bar-track">
+              <div class="bar-fill" [class]="p.cls" [style.width.%]="p.pct"></div>
+            </div>
+            <div class="bar-count">{{ p.count }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Type distribution -->
+      <div class="report-card card">
+        <h4 class="report-title">Type Distribution</h4>
+        <div class="bar-chart">
+          <div *ngFor="let t of typeStats" class="bar-row">
+            <div class="bar-label">{{ t.type }}</div>
+            <div class="bar-track">
+              <div class="bar-fill bar-type" [style.width.%]="t.pct"></div>
+            </div>
+            <div class="bar-count">{{ t.count }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLA compliance -->
+      <div class="report-card card">
+        <h4 class="report-title">SLA Compliance</h4>
+        <div class="sla-stats">
+          <div class="sla-item">
+            <span class="sla-dot sla-dot-ok"></span>
+            <span class="sla-item-label">On track</span>
+            <span class="sla-num sla-ok-txt">{{ slaStats.ok }}</span>
+          </div>
+          <div class="sla-item">
+            <span class="sla-dot sla-dot-risk"></span>
+            <span class="sla-item-label">At risk (&lt; 8h)</span>
+            <span class="sla-num sla-risk-txt">{{ slaStats.risk }}</span>
+          </div>
+          <div class="sla-item">
+            <span class="sla-dot sla-dot-breach"></span>
+            <span class="sla-item-label">Breached</span>
+            <span class="sla-num sla-breach-txt">{{ slaStats.breached }}</span>
+          </div>
+          <div class="sla-item">
+            <span class="sla-dot sla-dot-none"></span>
+            <span class="sla-item-label">No SLA</span>
+            <span class="sla-num">{{ slaStats.none }}</span>
+          </div>
+        </div>
+        <div class="sla-compliance-bar" *ngIf="total > 0">
+          <div class="sla-seg sla-seg-ok"     [style.flex]="slaStats.ok"      [title]="'On track: ' + slaStats.ok"></div>
+          <div class="sla-seg sla-seg-risk"   [style.flex]="slaStats.risk"    [title]="'At risk: ' + slaStats.risk"></div>
+          <div class="sla-seg sla-seg-breach" [style.flex]="slaStats.breached"[title]="'Breached: ' + slaStats.breached"></div>
+          <div class="sla-seg sla-seg-none"   [style.flex]="slaStats.none"    [title]="'No SLA: ' + slaStats.none"></div>
+        </div>
+      </div>
+
+      <!-- Tasks by user — full width -->
+      <div class="report-card card report-wide">
+        <h4 class="report-title">Tasks by Assignee</h4>
+        <div class="bar-chart">
+          <div *ngFor="let u of userStats" class="bar-row">
+            <div class="bar-label">{{ u.name }}</div>
+            <div class="bar-track">
+              <div class="bar-fill bar-user" [style.width.%]="u.pct"></div>
+            </div>
+            <div class="bar-count">{{ u.count }}</div>
+          </div>
+          <div class="empty-hint" *ngIf="userStats.length === 0">No tasks assigned yet</div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

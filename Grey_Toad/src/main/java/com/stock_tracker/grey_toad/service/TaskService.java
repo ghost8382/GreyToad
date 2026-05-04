@@ -4,7 +4,9 @@ import com.stock_tracker.grey_toad.data.ProjectRepository;
 import com.stock_tracker.grey_toad.data.TaskRepository;
 import com.stock_tracker.grey_toad.data.TeamMemberRepository;
 import com.stock_tracker.grey_toad.data.TeamRepository;
+import com.stock_tracker.grey_toad.data.TimeEntryRepository;
 import com.stock_tracker.grey_toad.data.UserRepository;
+import com.stock_tracker.grey_toad.entity.TimeEntry;
 import com.stock_tracker.grey_toad.dto.CreateTaskRequest;
 import com.stock_tracker.grey_toad.dto.AppNotificationDto;
 import com.stock_tracker.grey_toad.dto.TaskResponse;
@@ -18,6 +20,8 @@ import com.stock_tracker.grey_toad.exceptions.NotFoundException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +34,7 @@ public class TaskService {
     private final UserRepository userRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
+    private final TimeEntryRepository timeEntryRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final AuditLogService auditLogService;
 
@@ -38,6 +43,7 @@ public class TaskService {
                        UserRepository userRepository,
                        TeamMemberRepository teamMemberRepository,
                        TeamRepository teamRepository,
+                       TimeEntryRepository timeEntryRepository,
                        SimpMessagingTemplate messagingTemplate,
                        AuditLogService auditLogService) {
         this.taskRepository = taskRepository;
@@ -45,6 +51,7 @@ public class TaskService {
         this.userRepository = userRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.teamRepository = teamRepository;
+        this.timeEntryRepository = timeEntryRepository;
         this.messagingTemplate = messagingTemplate;
         this.auditLogService = auditLogService;
     }
@@ -109,11 +116,58 @@ public class TaskService {
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         String old = task.getStatus();
         task.setStatus(status);
-        if ("DONE".equals(status)) task.setArchived(true);
+        if ("DONE".equals(status)) {
+            task.setArchived(true);
+            closeOpenTimeEntry(task.getId());
+        }
         Task saved = taskRepository.save(task);
         auditLogService.log(null, task.getProject().getId(), "STATUS_CHANGED", "TASK",
                 taskId.toString(), "#" + task.getCaseNumber() + " status: " + old + " → " + status);
         return broadcastAndReturn(saved);
+    }
+
+    public TaskResponse accept(UUID taskId, String userEmail) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (task.getAssignee() == null || !task.getAssignee().getId().equals(user.getId())) {
+            throw new ForbiddenException("Only the assignee can accept this task");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        task.setAcceptanceStatus("ACCEPTED");
+        task.setStatus("IN_PROGRESS");
+        task.setWorkStartedAt(now);
+
+        TimeEntry entry = new TimeEntry();
+        entry.setTask(task);
+        entry.setUser(user);
+        entry.setStartedAt(now);
+        entry.setDate(LocalDate.now());
+        timeEntryRepository.save(entry);
+
+        auditLogService.log(userEmail, task.getProject().getId(), "TASK_ACCEPTED", "TASK",
+                taskId.toString(), "#" + task.getCaseNumber() + " accepted by " + user.getUsername());
+        return broadcastAndReturn(taskRepository.save(task));
+    }
+
+    public TaskResponse reject(UUID taskId, String userEmail) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (task.getAssignee() == null || !task.getAssignee().getId().equals(user.getId())) {
+            throw new ForbiddenException("Only the assignee can reject this task");
+        }
+        closeOpenTimeEntry(task.getId());
+        task.setAssignee(null);
+        task.setAcceptanceStatus(null);
+        task.setWorkStartedAt(null);
+        task.setStatus("TODO");
+
+        auditLogService.log(userEmail, task.getProject().getId(), "TASK_REJECTED", "TASK",
+                taskId.toString(), "#" + task.getCaseNumber() + " rejected by " + user.getUsername());
+        return broadcastAndReturn(taskRepository.save(task));
     }
 
     public TaskResponse assign(UUID taskId, UUID userId) {
@@ -121,7 +175,10 @@ public class TaskService {
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        closeOpenTimeEntry(task.getId());
         task.setAssignee(user);
+        task.setAcceptanceStatus("PENDING");
+        task.setWorkStartedAt(null);
         Task saved = taskRepository.save(task);
         sendTaskNotification(saved);
         auditLogService.log(null, task.getProject().getId(), "ASSIGNED", "TASK",
@@ -168,6 +225,15 @@ public class TaskService {
                 .orElseThrow(() -> new NotFoundException("Task not found"));
         task.setDeadline(deadline);
         return broadcastAndReturn(taskRepository.save(task));
+    }
+
+    private void closeOpenTimeEntry(UUID taskId) {
+        timeEntryRepository.findByTaskIdAndEndedAtIsNull(taskId).ifPresent(entry -> {
+            LocalDateTime now = LocalDateTime.now();
+            entry.setEndedAt(now);
+            entry.setMinutes((int) Duration.between(entry.getStartedAt(), now).toMinutes());
+            timeEntryRepository.save(entry);
+        });
     }
 
     private TaskResponse broadcastAndReturn(Task task) {
@@ -232,6 +298,11 @@ public class TaskService {
     }
 
     private TaskResponse mapToResponse(Task task, List<String> teamNames) {
+        int closedMinutes = timeEntryRepository.sumMinutesByTaskId(task.getId());
+        var activeSession = timeEntryRepository.findByTaskIdAndEndedAtIsNull(task.getId());
+        int liveMinutes = activeSession
+                .map(e -> (int) Duration.between(e.getStartedAt(), LocalDateTime.now()).toMinutes())
+                .orElse(0);
         return TaskResponse.builder()
                 .id(task.getId())
                 .caseNumber(task.getCaseNumber())
@@ -248,6 +319,10 @@ public class TaskService {
                 .archived(task.isArchived())
                 .priority(task.getPriority())
                 .type(task.getType())
+                .acceptanceStatus(task.getAcceptanceStatus())
+                .totalWorkedMinutes(closedMinutes + liveMinutes)
+                .workingSessionActive(activeSession.isPresent())
+                .workStartedAt(task.getWorkStartedAt())
                 .build();
     }
 }

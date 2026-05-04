@@ -31,6 +31,34 @@
         </div>
         <p class="task-desc text-muted" *ngIf="task.description">{{ task.description }}</p>
         <p class="text-muted text-sm" *ngIf="!task.description">No description provided.</p>
+
+        <!-- Accept / Reject (worker only, when pending) -->
+        <div class="acceptance-bar" *ngIf="task.acceptanceStatus === 'PENDING' && task.assigneeId === me?.id">
+          <div class="acceptance-hint">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            To zadanie czeka na Twoją akceptację
+          </div>
+          <div class="acceptance-btns">
+            <button class="btn-accept" (click)="acceptTask()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Przyjmij
+            </button>
+            <button class="btn-reject" (click)="rejectTask()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Odrzuć
+            </button>
+          </div>
+        </div>
+
+        <!-- Live timer (when accepted) -->
+        <div class="timer-bar" *ngIf="task.acceptanceStatus === 'ACCEPTED' && task.assigneeId === me?.id">
+          <div class="timer-dot"></div>
+          <span class="timer-label">Pracujesz od:</span>
+          <span class="timer-value">{{ liveTimerDisplay }}</span>
+          <span class="timer-total text-muted" *ngIf="(task.totalWorkedMinutes || 0) > 0">
+            · łącznie {{ formatMinutes(task.totalWorkedMinutes || 0) }}
+          </span>
+        </div>
       </div>
 
       <!-- Comments -->

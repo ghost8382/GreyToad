@@ -22,4 +22,5 @@ public class MessageResponse {
     private int replyCount = 0;
     @Builder.Default
     private MessageType type = MessageType.CHAT;
+    private boolean resolved;
 }

@@ -46,32 +46,58 @@
 
 /* ---- Light theme ---- */
 [data-theme="light"] {
-  --bg-primary:    #f0f0f0;
+  --bg-primary:    #f0f4f9;
   --bg-secondary:  #ffffff;
-  --bg-tertiary:   #e8e8e8;
+  --bg-tertiary:   #e8edf6;
   --bg-card:       #ffffff;
-  --bg-hover:      #e0e0e0;
+  --bg-hover:      #dde5f2;
 
-  --border:        #d0d0d0;
-  --border-hover:  #b0b0b0;
-  --border-focus:  #00b050;
+  --border:        #cdd6e8;
+  --border-hover:  #a8b8d2;
+  --border-focus:  #3b7dd8;
 
-  --text-primary:  #111111;
-  --text-secondary:#555555;
-  --text-muted:    #999999;
+  --text-primary:  #1a2333;
+  --text-secondary:#4a5568;
+  --text-muted:    #7a8a9e;
 
-  --accent:        #00b050;
-  --accent-hover:  #00c860;
-  --accent-dim:    rgba(0, 176, 80, 0.1);
-  --accent-glow:   rgba(0, 176, 80, 0.2);
+  --accent:        #3b7dd8;
+  --accent-hover:  #2c6bc0;
+  --accent-dim:    rgba(59, 125, 216, 0.12);
+  --accent-glow:   rgba(59, 125, 216, 0.22);
 
-  --success:       #00b050;
-  --warning:       #cc8800;
-  --danger:        #cc2222;
+  --success:       #1e9e5a;
+  --warning:       #b07800;
+  --danger:        #c82828;
 
   --shadow:    0 4px 24px rgba(0,0,0,0.08);
   --shadow-lg: 0 8px 40px rgba(0,0,0,0.14);
-  --shadow-neon: 0 0 20px rgba(0,176,80,0.12);
+  --shadow-neon: 0 0 20px rgba(59,125,216,0.15);
+}
+
+/* Fix hardcoded dark values in light mode */
+[data-theme="light"] {
+  ::-webkit-scrollbar-thumb { background: #a8b8cc; }
+
+  .msg-bubble { background: #f0f4f9 !important; border-color: var(--border) !important; }
+  .own .msg-bubble { background: linear-gradient(135deg, #3b7dd8, #5a92e0) !important; border-color: #2c6bc0 !important; color: #fff !important; }
+
+  .msg-avatar, .comment-avatar, .te-avatar, .popover-avatar,
+  .thread-avatar, .mention-avatar {
+    background: linear-gradient(135deg, #c0cce0, #a0b0cc) !important;
+    color: #3a4a5a !important;
+  }
+
+  .msg-bubble.thread-orig-bubble { background: #e8edf6 !important; }
+
+  select.form-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233b7dd8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+  }
+
+  .send-btn { background: linear-gradient(135deg, #3b7dd8, #5a92e0) !important; border-color: #2c6bc0 !important; }
+
+  .reaction-pill.reacted { background: rgba(59,125,216,0.12) !important; border-color: #3b7dd8 !important; }
+
+  .mention-tag { color: #2c6bc0 !important; background: rgba(59,125,216,0.1) !important; }
 }
 
 * {

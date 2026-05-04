@@ -2,10 +2,27 @@
   <div class="page-header">
     <div>
       <h1>{{ getGreeting() }}<span *ngIf="user">, {{ user.username }}</span></h1>
-      <p class="text-muted text-sm" *ngIf="isAdmin">Przegląd całego workspace'u</p>
-      <p class="text-muted text-sm" *ngIf="!isAdmin">Twoje zadania i zespoły</p>
+      <p class="text-muted text-sm" *ngIf="selectedProject">
+        Projekt: <strong>{{ selectedProject.name }}</strong>
+      </p>
     </div>
   </div>
+
+  <!-- No project selected -->
+  <div class="empty-state" *ngIf="!selectedProject">
+    <div class="empty-icon">📂</div>
+    <p>Wybierz projekt z listy po lewej stronie</p>
+    <p class="text-sm text-muted">Twoje zespoły i zadania pojawią się tutaj</p>
+  </div>
+
+  <!-- Not a member of this project -->
+  <div class="empty-state not-member-state" *ngIf="notMemberOfProject">
+    <div class="empty-icon">🔒</div>
+    <p><strong>Nie jesteś jeszcze członkiem tego projektu</strong></p>
+    <p class="text-sm text-muted">Administrator musi dodać Cię do zespołu w projekcie <strong>{{ selectedProject?.name }}</strong></p>
+  </div>
+
+  <ng-container *ngIf="selectedProject && !notMemberOfProject">
 
   <!-- Stats row -->
   <div class="stats-grid">
@@ -111,4 +128,6 @@
       </a>
     </div>
   </div>
+
+  </ng-container>
 </div>

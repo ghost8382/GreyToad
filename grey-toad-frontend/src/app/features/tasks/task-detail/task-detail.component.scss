@@ -202,5 +202,52 @@
 .att-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .att-meta { font-size: 11px; flex-shrink: 0; }
 
+/* Accept / Reject */
+.acceptance-bar {
+  margin-top: 16px; padding: 14px 16px;
+  background: rgba(232,164,74,0.08); border: 1px solid rgba(232,164,74,0.3);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.acceptance-hint {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: #e8a44a; font-weight: 500;
+}
+.acceptance-btns { display: flex; gap: 8px; }
+.btn-accept {
+  display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+  background: rgba(74,154,106,0.15); border: 1px solid rgba(74,154,106,0.5);
+  border-radius: var(--radius-sm); color: #4a9a6a; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+  &:hover { background: rgba(74,154,106,0.25); border-color: #4a9a6a; }
+}
+.btn-reject {
+  display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+  background: rgba(192,57,43,0.1); border: 1px solid rgba(192,57,43,0.4);
+  border-radius: var(--radius-sm); color: #c0392b; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+  &:hover { background: rgba(192,57,43,0.2); border-color: #c0392b; }
+}
+
+/* Live timer */
+.timer-bar {
+  margin-top: 14px; padding: 10px 14px;
+  background: rgba(90,138,170,0.08); border: 1px solid rgba(90,138,170,0.25);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.timer-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #4a9a6a;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+.timer-label { font-size: 12px; color: var(--text-muted); }
+.timer-value { font-size: 14px; font-weight: 700; color: #5a8aaa; font-variant-numeric: tabular-nums; }
+.timer-total { font-size: 12px; }
+
 @media (max-width: 700px) { .task-layout { grid-template-columns: 1fr; } }
 @media (max-width: 500px) { .time-form-row { flex-direction: column; align-items: stretch; } }

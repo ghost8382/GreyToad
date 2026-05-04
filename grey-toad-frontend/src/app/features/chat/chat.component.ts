@@ -319,6 +319,16 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  // ---- Resolve post ----
+
+  resolvePost(post: Message) {
+    if (!this.selectedChannel) return;
+    this.channelService.resolvePost(this.selectedChannel.id, post.id).subscribe(updated => {
+      const idx = this.posts.findIndex(p => p.id === post.id);
+      if (idx !== -1) this.posts[idx] = { ...this.posts[idx], resolved: updated.resolved };
+    });
+  }
+
   // ---- Reactions ----
 
   toggleReaction(msgId: string, emoji: string) {

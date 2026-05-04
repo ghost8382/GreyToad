@@ -68,6 +68,13 @@ public class MessageController {
         return messageService.createPost(channelId, requirePrincipal(principal), request.getContent());
     }
 
+    @PatchMapping("/posts/{messageId}/resolve")
+    public MessageResponse resolvePost(@PathVariable UUID channelId,
+                                        @PathVariable UUID messageId,
+                                        Principal principal) {
+        return messageService.resolvePost(messageId, requirePrincipal(principal));
+    }
+
     private String requirePrincipal(Principal principal) {
         if (principal == null) {
             throw new UnauthorizedException("Unauthorized user");

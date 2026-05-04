@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TeamService, ProjectService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ProjectContextService } from '../../../core/services/project-context.service';
 import { Team, Project } from '../../../shared/models';
 
 @Component({
@@ -33,7 +34,8 @@ export class TeamsListComponent implements OnInit {
     private projectService: ProjectService,
     public auth: AuthService,
     private fb: FormBuilder,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private projectContext: ProjectContextService
   ) {}
 
   ngOnInit() {
@@ -49,9 +51,10 @@ export class TeamsListComponent implements OnInit {
       this.projectService.getAll().subscribe(projects => {
         this.projects = projects;
         this.route.queryParams.subscribe(p => {
-          if (p['projectId']) {
-            this.selectProject(p['projectId']);
-            this.form.patchValue({ projectId: p['projectId'] });
+          const toSelect = p['projectId'] || this.projectContext.selected?.id || '';
+          if (toSelect) {
+            this.selectProject(toSelect);
+            this.form.patchValue({ projectId: toSelect });
           }
         });
       });

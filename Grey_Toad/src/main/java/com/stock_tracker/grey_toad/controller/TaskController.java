@@ -94,4 +94,16 @@ public class TaskController {
         if (principal == null) throw new UnauthorizedException("Unauthorized");
         return taskService.setDeadline(taskId, LocalDateTime.parse(deadline), principal.getName());
     }
+
+    @PostMapping("/{taskId}/accept")
+    public TaskResponse accept(@PathVariable UUID taskId, Principal principal) {
+        if (principal == null) throw new UnauthorizedException("Unauthorized");
+        return taskService.accept(taskId, principal.getName());
+    }
+
+    @PostMapping("/{taskId}/reject")
+    public TaskResponse reject(@PathVariable UUID taskId, Principal principal) {
+        if (principal == null) throw new UnauthorizedException("Unauthorized");
+        return taskService.reject(taskId, principal.getName());
+    }
 }

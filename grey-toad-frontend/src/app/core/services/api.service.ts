@@ -55,6 +55,8 @@ export class TaskService {
   setPriority(id: string, priority: string)        { return this.http.patch<Task>(`${API}/tasks/${id}/priority?priority=${priority}`, {}); }
   setType(id: string, type: string)                { return this.http.patch<Task>(`${API}/tasks/${id}/type?type=${type}`, {}); }
   setDeadline(id: string, deadline: string)        { return this.http.patch<Task>(`${API}/tasks/${id}/deadline?deadline=${encodeURIComponent(deadline)}`, {}); }
+  accept(id: string)                               { return this.http.post<Task>(`${API}/tasks/${id}/accept`, {}); }
+  reject(id: string)                               { return this.http.post<Task>(`${API}/tasks/${id}/reject`, {}); }
 
   getComments(taskId: string)                      { return this.http.get<Comment[]>(`${API}/tasks/${taskId}/comments`); }
   addComment(taskId: string, r: CreateCommentRequest) { return this.http.post<Comment>(`${API}/tasks/${taskId}/comments`, r); }
@@ -100,6 +102,9 @@ export class ChannelService {
   }
   deleteChannel(channelId: string) {
     return this.http.delete(`${API}/channels/${channelId}`);
+  }
+  resolvePost(channelId: string, messageId: string) {
+    return this.http.patch<Message>(`${API}/channels/${channelId}/messages/posts/${messageId}/resolve`, {});
   }
 }
 

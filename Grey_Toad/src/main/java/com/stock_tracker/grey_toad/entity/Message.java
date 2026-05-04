@@ -37,4 +37,7 @@ public class Message {
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "varchar(50) not null default 'CHAT'")
     private MessageType type = MessageType.CHAT;
+
+    @Column(columnDefinition = "boolean default false")
+    private boolean resolved = false;
 }

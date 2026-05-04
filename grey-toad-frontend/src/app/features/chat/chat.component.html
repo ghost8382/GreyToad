@@ -159,13 +159,19 @@
             <p class="text-sm text-muted">Be the first to start a discussion</p>
           </div>
 
-          <div class="post-card" *ngFor="let post of posts" [class.react-open]="reactPickerOpenId === post.id">
+          <div class="post-card" *ngFor="let post of posts"
+            [class.react-open]="reactPickerOpenId === post.id"
+            [class.resolved]="post.resolved">
             <div class="post-header">
               <div class="post-avatar">{{ getUserName(post.senderId).slice(0,2).toUpperCase() }}</div>
               <div class="post-meta">
                 <span class="post-author">{{ getUserName(post.senderId) }}</span>
                 <span class="post-time">{{ formatTime(post.createdAt) }} · {{ formatDay(post.createdAt) }}</span>
               </div>
+              <span class="resolved-badge" *ngIf="post.resolved">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Resolved
+              </span>
               <div class="post-card-actions">
                 <div class="react-picker-mini" *ngIf="reactPickerOpenId === post.id" (click)="$event.stopPropagation()">
                   <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(post.id, e)">{{ e }}</button>
@@ -175,6 +181,13 @@
                 </button>
                 <button class="msg-action-btn" (click)="openThread(post)" title="Reply" [class.active]="threadMessage?.id === post.id">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                </button>
+                <button class="msg-action-btn resolve-btn"
+                  *ngIf="isAdmin || post.senderId === me?.id"
+                  (click)="resolvePost(post)"
+                  [class.active]="post.resolved"
+                  [title]="post.resolved ? 'Mark as unresolved' : 'Mark as resolved'">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </button>
               </div>
             </div>
