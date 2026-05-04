@@ -31,8 +31,8 @@ public class MessageController {
     }
 
     @GetMapping
-    public List<MessageResponse> getMessages(@PathVariable UUID channelId) {
-        return messageService.getByChannel(channelId);
+    public List<MessageResponse> getMessages(@PathVariable UUID channelId, Principal principal) {
+        return messageService.getByChannel(channelId, principal != null ? principal.getName() : null);
     }
 
     @PostMapping("/{messageId}/replies")
@@ -46,8 +46,9 @@ public class MessageController {
 
     @GetMapping("/{messageId}/replies")
     public List<MessageResponse> getReplies(@PathVariable UUID channelId,
-                                             @PathVariable UUID messageId) {
-        return messageService.getReplies(messageId);
+                                             @PathVariable UUID messageId,
+                                             Principal principal) {
+        return messageService.getReplies(messageId, principal != null ? principal.getName() : null);
     }
 
     @GetMapping("/threads")
@@ -56,8 +57,8 @@ public class MessageController {
     }
 
     @GetMapping("/posts")
-    public List<MessageResponse> getPosts(@PathVariable UUID channelId) {
-        return messageService.getPosts(channelId);
+    public List<MessageResponse> getPosts(@PathVariable UUID channelId, Principal principal) {
+        return messageService.getPosts(channelId, principal != null ? principal.getName() : null);
     }
 
     @PostMapping("/posts")

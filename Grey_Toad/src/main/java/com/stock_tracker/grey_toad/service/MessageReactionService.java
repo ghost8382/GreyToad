@@ -3,6 +3,7 @@ package com.stock_tracker.grey_toad.service;
 import com.stock_tracker.grey_toad.data.MessageReactionRepository;
 import com.stock_tracker.grey_toad.data.MessageRepository;
 import com.stock_tracker.grey_toad.data.UserRepository;
+import java.util.Optional;
 import com.stock_tracker.grey_toad.dto.MessageReactionResponse;
 import com.stock_tracker.grey_toad.entity.Message;
 import com.stock_tracker.grey_toad.entity.MessageReaction;
@@ -49,10 +50,15 @@ public class MessageReactionService {
             reactionRepository.save(reaction);
         }
 
-        return getForMessage(messageId, user.getId());
+        return getForMessage(messageId, user.getEmail());
     }
 
-    public List<MessageReactionResponse> getForMessage(UUID messageId, UUID currentUserId) {
+    public List<MessageReactionResponse> getForMessage(UUID messageId, String currentUserEmail) {
+        UUID currentUserId = Optional.ofNullable(currentUserEmail)
+                .flatMap(userRepository::findByEmail)
+                .map(User::getId)
+                .orElse(null);
+
         List<MessageReaction> all = reactionRepository.findByMessageId(messageId);
 
         Map<String, List<MessageReaction>> byEmoji = all.stream()
@@ -62,7 +68,8 @@ public class MessageReactionService {
                 .map(e -> MessageReactionResponse.builder()
                         .emoji(e.getKey())
                         .count(e.getValue().size())
-                        .reactedByMe(e.getValue().stream().anyMatch(r -> r.getUser().getId().equals(currentUserId)))
+                        .reactedByMe(currentUserId != null &&
+                                e.getValue().stream().anyMatch(r -> r.getUser().getId().equals(currentUserId)))
                         .build())
                 .toList();
     }
