@@ -5,7 +5,9 @@
       "Bash(./gradlew compileJava)",
       "Bash(grep -E \"\\\\.\\(ts|html\\)$\")",
       "Bash(xargs grep *)",
-      "Bash(find /c/Users/testd/Desktop/GreyToad/Grey_Toad/src/test -type f -name \"*.java\" -exec basename {} \\\\;)"
+      "Bash(find /c/Users/testd/Desktop/GreyToad/Grey_Toad/src/test -type f -name \"*.java\" -exec basename {} \\\\;)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\testd\\\\Desktop\\\\GreyToad\\\\Grey_Toad\\\\src\\\\main\\\\java\\\\com\\\\stock_tracker\\\\grey_toad\" -Recurse)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }
