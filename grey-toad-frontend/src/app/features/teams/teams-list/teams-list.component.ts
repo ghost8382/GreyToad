@@ -45,7 +45,11 @@ export class TeamsListComponent implements OnInit {
     if (this.isUserRole) {
       this.loading = true;
       this.teamService.getMyTeams().subscribe({
-        next: t => { this.teams = t; this.loading = false; },
+        next: t => {
+          const selectedId = this.projectContext.selected?.id;
+          this.teams = selectedId ? t.filter(team => team.projectId === selectedId) : t;
+          this.loading = false;
+        },
         error: () => { this.loading = false; }
       });
     } else {

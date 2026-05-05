@@ -272,17 +272,22 @@ public class TaskService {
 
         User best = null;
         long minLoad = Long.MAX_VALUE;
-        for (Team team : teams) {
-            for (TeamMember m : teamMemberRepository.findByTeamId(team.getId())) {
-                long load = taskRepository.countByAssigneeIdAndProjectId(
-                        m.getUser().getId(), project.getId());
-                if (load < minLoad) {
-                    minLoad = load;
-                    best = m.getUser();
+        for (boolean onlineOnly : new boolean[]{true, false}) {
+            for (Team team : teams) {
+                for (TeamMember m : teamMemberRepository.findByTeamId(team.getId())) {
+                    User u = m.getUser();
+                    if ("ADMIN".equals(u.getRole()) || u.isHeadAdmin()) continue;
+                    if (onlineOnly && !u.isOnline()) continue;
+                    long load = taskRepository.countByAssigneeIdAndProjectIdAndStatusNotAndArchivedFalse(u.getId(), project.getId(), "DONE");
+                    if (load < minLoad) {
+                        minLoad = load;
+                        best = u;
+                    }
                 }
             }
+            if (best != null) return best;
         }
-        return best;
+        return null;
     }
 
     private void sendTaskNotification(Task task) {

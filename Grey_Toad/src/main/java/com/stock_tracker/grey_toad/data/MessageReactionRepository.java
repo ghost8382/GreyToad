@@ -11,5 +11,4 @@ public interface MessageReactionRepository extends JpaRepository<MessageReaction
     List<MessageReaction> findByMessageIdIn(List<UUID> messageIds);
     Optional<MessageReaction> findByMessageIdAndUserId(UUID messageId, UUID userId);
     Optional<MessageReaction> findByMessageIdAndUserIdAndEmoji(UUID messageId, UUID userId, String emoji);
-    void deleteByMessageIdAndUserIdAndEmoji(UUID messageId, UUID userId, String emoji);
 }

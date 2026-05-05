@@ -13,6 +13,4 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, UUID> {
     @Query("SELECT COALESCE(SUM(t.minutes), 0) FROM TimeEntry t WHERE t.task.id = :taskId")
     int sumMinutesByTaskId(UUID taskId);
 
-    @Query("SELECT COALESCE(SUM(t.minutes), 0) FROM TimeEntry t WHERE t.task.project.id = :projectId")
-    int sumMinutesByProjectId(UUID projectId);
 }

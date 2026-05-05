@@ -16,7 +16,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     long countByProjectId(UUID projectId);
 
-    long countByAssigneeIdAndProjectId(UUID assigneeId, UUID projectId);
+    long countByAssigneeIdAndProjectIdAndStatusNotAndArchivedFalse(UUID assigneeId, UUID projectId, String status);
 
     java.util.Optional<Task> findByProjectIdAndCaseNumber(UUID projectId, Integer caseNumber);
 }

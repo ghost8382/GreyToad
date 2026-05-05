@@ -238,11 +238,13 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.searchDebounce = setTimeout(() => {
       const pid = this.projectContext.selected?.id;
       if (!pid) { this.searchLoading = false; return; }
-      this.taskService.getByProject(pid).subscribe(tasks => {
+      this.taskService.getByProject(pid, true).subscribe(tasks => {
         const q = this.searchQuery.toLowerCase();
+        const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const wordRe = new RegExp(`\\b${escaped}\\b`, 'i');
         this.searchResults = tasks.filter(t =>
-          t.title.toLowerCase().includes(q) ||
-          String(t.caseNumber ?? '').includes(q)
+          wordRe.test(t.title) ||
+          t.caseNumber === Number(q)
         ).slice(0, 8);
         this.searchLoading = false;
       });
