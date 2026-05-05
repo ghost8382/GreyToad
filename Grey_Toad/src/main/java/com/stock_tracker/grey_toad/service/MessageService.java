@@ -15,6 +15,7 @@ import com.stock_tracker.grey_toad.entity.User;
 import com.stock_tracker.grey_toad.exceptions.ForbiddenException;
 import com.stock_tracker.grey_toad.exceptions.NotFoundException;
 import com.stock_tracker.grey_toad.exceptions.UnauthorizedException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -31,17 +32,20 @@ public class MessageService {
     private final UserRepository userRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final MessageReactionRepository reactionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public MessageService(MessageRepository messageRepository,
                           ChannelRepository channelRepository,
                           UserRepository userRepository,
                           TeamMemberRepository teamMemberRepository,
-                          MessageReactionRepository reactionRepository) {
+                          MessageReactionRepository reactionRepository,
+                          SimpMessagingTemplate messagingTemplate) {
         this.messageRepository = messageRepository;
         this.channelRepository = channelRepository;
         this.userRepository = userRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.reactionRepository = reactionRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public MessageResponse send(UUID channelId, String senderEmail, String content) {
@@ -65,7 +69,11 @@ public class MessageService {
         message.setParentId(parentId);
         message.setCreatedAt(LocalDateTime.now());
 
-        return mapToResponse(messageRepository.save(message), 0, List.of(), null);
+        MessageResponse response = mapToResponse(messageRepository.save(message), 0, List.of(), null);
+        if (parentId != null) {
+            messagingTemplate.convertAndSend("/topic/channel/" + channelId, response);
+        }
+        return response;
     }
 
     public List<MessageResponse> getByChannel(UUID channelId, String currentUserEmail) {
@@ -93,14 +101,17 @@ public class MessageService {
                 .toList();
     }
 
-    public List<MessageResponse> getThreadStarters(UUID channelId) {
+    public List<MessageResponse> getThreadStarters(UUID channelId, String currentUserEmail) {
         List<Message> all = messageRepository.findByChannelId(channelId);
+        Map<UUID, List<MessageReaction>> reactionsMap = batchLoadReactions(all);
+        UUID currentUserId = resolveUserId(currentUserEmail);
         Map<UUID, Long> replyCounts = all.stream()
                 .filter(m -> m.getParentId() != null)
                 .collect(Collectors.groupingBy(Message::getParentId, Collectors.counting()));
         return all.stream()
                 .filter(m -> m.getParentId() == null && m.getType() == MessageType.CHAT && replyCounts.containsKey(m.getId()))
-                .map(m -> mapToResponse(m, replyCounts.get(m.getId()).intValue(), List.of(), null))
+                .map(m -> mapToResponse(m, replyCounts.get(m.getId()).intValue(),
+                        reactionsMap.getOrDefault(m.getId(), List.of()), currentUserId))
                 .toList();
     }
 
@@ -122,7 +133,9 @@ public class MessageService {
         }
         message.setResolved(!message.isResolved());
         Message saved = messageRepository.save(message);
-        return mapToResponse(saved, 0, reactionRepository.findByMessageId(saved.getId()), user.getId());
+        MessageResponse response = mapToResponse(saved, 0, reactionRepository.findByMessageId(saved.getId()), null);
+        messagingTemplate.convertAndSend("/topic/channel/" + saved.getChannel().getId(), response);
+        return response;
     }
 
     public MessageResponse createPost(UUID channelId, String senderEmail, String content) {
@@ -137,7 +150,17 @@ public class MessageService {
         post.setType(MessageType.POST);
         post.setCreatedAt(LocalDateTime.now());
 
-        return mapToResponse(messageRepository.save(post), 0, List.of(), null);
+        MessageResponse response = mapToResponse(messageRepository.save(post), 0, List.of(), null);
+        messagingTemplate.convertAndSend("/topic/channel/" + channelId, response);
+        return response;
+    }
+
+    public void broadcastMessageUpdate(UUID messageId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new NotFoundException("Message not found"));
+        List<MessageReaction> reactions = reactionRepository.findByMessageId(messageId);
+        MessageResponse response = mapToResponse(message, 0, reactions, null);
+        messagingTemplate.convertAndSend("/topic/channel/" + message.getChannel().getId(), response);
     }
 
     private User findUserByEmail(String senderEmail) {
@@ -171,6 +194,7 @@ public class MessageService {
                         .count(e.getValue().size())
                         .reactedByMe(currentUserId != null &&
                                 e.getValue().stream().anyMatch(r -> r.getUser().getId().equals(currentUserId)))
+                        .reactors(e.getValue().stream().map(r -> r.getUser().getUsername()).toList())
                         .build())
                 .toList();
 

@@ -75,7 +75,7 @@ export class TeamDetailComponent implements OnInit {
 
   demoteToWorker(member: TeamMember) {
     const user = this.allUsers.find(u => u.id === member.userId);
-    if (!confirm(`Odbierz rolę Lidera użytkownikowi ${user?.username}?`)) return;
+    if (!confirm(`Remove Leader role from ${user?.username}?`)) return;
     this.userService.setRole(member.userId, 'USER').subscribe({
       next: () => { const u = this.allUsers.find(u => u.id === member.userId); if (u) u.role = 'USER'; }
     });
@@ -113,13 +113,17 @@ export class TeamDetailComponent implements OnInit {
   getUserStatusLabel(userId: string): string {
     const status = this.allUsers.find(u => u.id === userId)?.status;
     const labels: Record<string, string> = {
-      AVAILABLE: 'Dostępny', BREAK: 'Przerwa', DINNER: 'Obiad',
-      OUT_OF_OFFICE: 'Poza biurem', MEETING: 'Spotkanie', OFFLINE: 'Offline'
+      AVAILABLE: 'Available', BREAK: 'Break', DINNER: 'Lunch',
+      OUT_OF_OFFICE: 'Out of office', MEETING: 'Meeting', OFFLINE: 'Offline'
     };
     return labels[status || ''] || 'Offline';
   }
 
   getUserEmail(userId: string): string {
     return this.allUsers.find(u => u.id === userId)?.email || '';
+  }
+
+  getUserJobTitle(userId: string): string {
+    return this.allUsers.find(u => u.id === userId)?.jobTitle || '';
   }
 }

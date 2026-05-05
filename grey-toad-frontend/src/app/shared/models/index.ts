@@ -4,7 +4,7 @@ export interface LoginRequest  { email: string; password: string; }
 export interface RegisterRequest { username: string; email: string; password: string; }
 
 // User
-export interface User { id: string; username: string; email: string; role: string; quote?: string; status?: string; }
+export interface User { id: string; username: string; email: string; role: string; quote?: string; status?: string; isOnline?: boolean; jobTitle?: string; headAdmin?: boolean; }
 export interface UpdateProfileRequest { quote?: string; status?: string; }
 export const USER_STATUSES = [
   { value: 'AVAILABLE',     label: 'Available',    color: '#4a9a6a' },
@@ -62,7 +62,7 @@ export interface Channel { id: string; name: string; teamId: string; projectId?:
 export interface CreateChannelRequest { name: string; teamId: string; scope?: ChannelScope; }
 
 // Message reaction
-export interface MessageReaction { emoji: string; count: number; reactedByMe: boolean; }
+export interface MessageReaction { emoji: string; count: number; reactedByMe: boolean; reactors?: string[]; }
 
 // Channel Message
 export type MessageType = 'CHAT' | 'POST';
@@ -82,10 +82,17 @@ export interface TaskNotification {
   taskTitle: string;
 }
 
-// Generic app notification (bell panel)
+// Role Template
+export interface RoleTemplate { id: string; name: string; permissionLevel: string; }
+export interface CreateRoleTemplateRequest { name: string; permissionLevel: string; }
+
+// Generic app notification (bell panel) — WS-pushed (no id) or DB-loaded (has id)
 export interface AppNotification {
-  type: 'TASK_ASSIGNED' | 'DM' | 'CHANNEL_MESSAGE';
+  id?: string;
+  type: 'TASK_ASSIGNED' | 'DM' | 'CHANNEL_MESSAGE' | 'MENTION';
   title: string;
   body: string;
   projectId?: string;
+  read?: boolean;
+  createdAt?: string;
 }

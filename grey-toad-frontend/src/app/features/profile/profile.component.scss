@@ -41,6 +41,8 @@
   &.role-user   { background: rgba(100,100,100,.1);  color: var(--text-muted); }
 }
 
+.identity-job-title { font-size: 12px; color: var(--text-muted); margin-top: -2px; }
+
 .identity-status {
   display: flex; align-items: center; gap: 6px;
   font-size: 12px; color: var(--text-secondary);

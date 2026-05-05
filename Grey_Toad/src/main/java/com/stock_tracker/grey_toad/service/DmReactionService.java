@@ -38,16 +38,18 @@ public class DmReactionService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        var existing = reactionRepository.findByDirectMessageIdAndUserIdAndEmoji(dmId, user.getId(), emoji);
+        var existing = reactionRepository.findByDirectMessageIdAndUserId(dmId, user.getId());
         if (existing.isPresent()) {
             reactionRepository.delete(existing.get());
-        } else {
-            DmReaction reaction = new DmReaction();
-            reaction.setDirectMessage(dm);
-            reaction.setUser(user);
-            reaction.setEmoji(emoji);
-            reactionRepository.save(reaction);
+            if (existing.get().getEmoji().equals(emoji)) {
+                return buildResponse(dmId, user.getId());
+            }
         }
+        DmReaction reaction = new DmReaction();
+        reaction.setDirectMessage(dm);
+        reaction.setUser(user);
+        reaction.setEmoji(emoji);
+        reactionRepository.save(reaction);
 
         return buildResponse(dmId, user.getId());
     }
@@ -61,6 +63,7 @@ public class DmReactionService {
                         .emoji(e.getKey())
                         .count(e.getValue().size())
                         .reactedByMe(e.getValue().stream().anyMatch(r -> r.getUser().getId().equals(currentUserId)))
+                        .reactors(e.getValue().stream().map(r -> r.getUser().getUsername()).toList())
                         .build())
                 .toList();
     }

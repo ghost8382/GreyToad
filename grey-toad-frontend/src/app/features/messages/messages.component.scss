@@ -103,6 +103,9 @@
 .message {
   display: flex; gap: 10px; max-width: 70%;
   align-self: flex-start; animation: fadeIn 0.15s ease;
+  position: relative;
+
+  &:hover, &.react-open { z-index: 5; }
 
   &.own {
     align-self: flex-end; flex-direction: row-reverse;
@@ -266,9 +269,17 @@
   box-shadow: 0 4px 16px rgba(0,0,0,0.35);
   z-index: 20;
   white-space: nowrap;
-  &::after {
-    content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 8px;
-  }
+}
+
+.react-picker-fixed {
+  position: fixed;
+  display: flex; gap: 2px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  padding: 4px 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  z-index: 9999;
 }
 .rp-emoji {
   background: none; border: none; cursor: pointer;
@@ -280,6 +291,7 @@
 
 .reactions-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .reaction-pill {
+  position: relative;
   display: inline-flex; align-items: center; gap: 3px;
   background: var(--bg-tertiary); border: 1px solid var(--border);
   border-radius: 12px; padding: 2px 8px;
@@ -287,4 +299,23 @@
   font-family: var(--font);
   &:hover { border-color: var(--border-hover); background: var(--bg-hover); }
   &.reacted { border-color: var(--border-focus); background: var(--accent-dim); }
+
+  .reaction-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 200;
+    pointer-events: none;
+    color: var(--text-secondary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  &:hover .reaction-tooltip { display: block; }
 }

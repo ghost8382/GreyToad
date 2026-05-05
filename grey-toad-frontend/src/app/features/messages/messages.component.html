@@ -25,12 +25,12 @@
       >
         <div class="avatar-wrap">
           <div class="user-avatar" [class]="avatarClass(u.username)">{{ getInitials(u.username) }}</div>
-          <span class="status-dot-sm" [style.background]="getStatusColor(u.status)" [title]="getStatusLabel(u.status)"></span>
+          <span class="status-dot-sm" [style.background]="getStatusColor(getEffectiveStatus(u))" [title]="getStatusLabel(getEffectiveStatus(u))"></span>
         </div>
         <div class="user-info">
           <div class="user-name-row">
             <div class="user-login">{{ u.username }}</div>
-            <span class="status-label-sm" [style.color]="getStatusColor(u.status)">{{ getStatusLabel(u.status) }}</span>
+            <span class="status-label-sm" [style.color]="getStatusColor(getEffectiveStatus(u))">{{ getStatusLabel(getEffectiveStatus(u)) }}</span>
           </div>
           <div class="user-last-msg" *ngIf="getLastMessage(u)">{{ getLastMessage(u) }}</div>
           <div class="user-email text-muted" *ngIf="!getLastMessage(u)">{{ u.email }}</div>
@@ -56,12 +56,12 @@
       <div class="conv-header">
         <div class="avatar-wrap">
           <div class="user-avatar" [class]="avatarClass(selectedUser.username)">{{ getInitials(selectedUser.username) }}</div>
-          <span class="status-dot-sm" [style.background]="getStatusColor(selectedUser.status)" [title]="getStatusLabel(selectedUser.status)"></span>
+          <span class="status-dot-sm" [style.background]="getStatusColor(getEffectiveStatus(selectedUser))" [title]="getStatusLabel(getEffectiveStatus(selectedUser))"></span>
         </div>
         <div>
           <div class="conv-name">{{ selectedUser.username }}</div>
-          <div class="conv-status text-sm" [style.color]="getStatusColor(selectedUser.status)">
-            {{ getStatusLabel(selectedUser.status) }}
+          <div class="conv-status text-sm" [style.color]="getStatusColor(getEffectiveStatus(selectedUser))">
+            {{ getStatusLabel(getEffectiveStatus(selectedUser)) }}
           </div>
         </div>
       </div>
@@ -87,9 +87,6 @@
               <div class="msg-bubble-wrap">
                 <div class="msg-bubble" [innerHTML]="renderContent(msg.content)"></div>
                 <div class="msg-actions" *ngIf="!msg.id.startsWith('tmp-')">
-                  <div class="react-picker-mini" *ngIf="reactPickerOpenId === msg.id" (click)="$event.stopPropagation()">
-                    <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(msg.id, e)">{{ e }}</button>
-                  </div>
                   <button class="msg-action-btn" (click)="openReactPicker(msg.id, $event)" title="React">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                   </button>
@@ -99,6 +96,7 @@
                 <button *ngFor="let r of msg.reactions" class="reaction-pill"
                   [class.reacted]="r.reactedByMe" (click)="toggleReaction(msg.id, r.emoji)">
                   {{ r.emoji }} {{ r.count }}
+                  <span class="reaction-tooltip" *ngIf="r.reactors && r.reactors.length > 0">{{ r.reactors.join(', ') }}</span>
                 </button>
               </div>
               <div class="msg-time">{{ formatTime(msg.createdAt) }}</div>
@@ -128,7 +126,7 @@
         </div>
 
         <div class="input-wrap">
-          <button class="emoji-trigger" (click)="$event.stopPropagation(); emojiPickerOpen = !emojiPickerOpen" title="Emotki">
+          <button class="emoji-trigger" (click)="$event.stopPropagation(); emojiPickerOpen = !emojiPickerOpen" title="Emoji">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </button>
           <textarea
@@ -146,5 +144,14 @@
         <p class="input-hint text-sm text-muted">Enter to send · Shift+Enter for new line · &#64; to mention</p>
       </div>
     </ng-container>
+  </div>
+
+  <!-- Fixed reaction picker — bypasses all parent overflow clipping -->
+  <div *ngIf="reactPickerOpenId && reactPickerPos"
+       class="react-picker-fixed"
+       [style.top.px]="reactPickerPos!.top"
+       [style.left.px]="reactPickerPos!.left"
+       (click)="$event.stopPropagation()">
+    <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(reactPickerOpenId!, e)">{{ e }}</button>
   </div>
 </div>

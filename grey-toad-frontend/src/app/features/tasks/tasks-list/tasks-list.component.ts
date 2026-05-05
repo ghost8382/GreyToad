@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subscription, combineLatest } from 'rxjs';
 import { TaskService, UserService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProjectContextService } from '../../../core/services/project-context.service';
@@ -34,7 +34,6 @@ export class TasksListComponent implements OnInit, OnDestroy {
   saving = false;
   autoAssign = false;
   viewMode: 'list' | 'kanban' = 'list';
-  me: any = null;
 
   slaTaskId: string | null = null;
   slaValue = '';
@@ -69,23 +68,25 @@ export class TasksListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.auth.currentUser$.subscribe(u => {
-      this.me = u;
       if (u && u.role !== 'ADMIN' && u.role !== 'LEADER') {
         this.filterAssignedToMe = true;
       }
     });
     this.ws.connect();
 
-    // Update project selector list
-    this.projectContext.projects$.subscribe(projects => { this.projects = projects; });
-
     // Load tasks from URL param (deep-link)
     this.route.queryParams.subscribe(p => {
       if (p['projectId']) this.onProjectChange(p['projectId']);
     });
 
-    // Load tasks when project context resolves or user switches project
-    this.projectContext.selected$.subscribe(selected => {
+    // Load tasks only after both project list and selected project are ready.
+    // Using combineLatest prevents a race where the dropdown resets selectedProject to ''
+    // because the options list is still empty when the BehaviorSubject emits the project.
+    combineLatest([
+      this.projectContext.projects$,
+      this.projectContext.selected$
+    ]).subscribe(([projects, selected]) => {
+      this.projects = projects;
       if (selected?.id && selected.id !== this.selectedProject) {
         this.onProjectChange(selected.id);
       }
@@ -122,13 +123,19 @@ export class TasksListComponent implements OnInit, OnDestroy {
 
   loadTasks() {
     if (!this.selectedProject) return;
+    this.tasks = [];
     this.loading = true;
+    console.log('[Tasks] loadTasks projectId=', this.selectedProject);
     this.taskService.getByProject(this.selectedProject, this.showArchived).subscribe({
       next: t => {
+        console.log('[Tasks] got', t.length, 'tasks for', this.selectedProject);
         this.tasks = t.sort((a, b) => (a.caseNumber ?? 0) - (b.caseNumber ?? 0));
         this.loading = false;
       },
-      error: () => { this.loading = false; }
+      error: (e) => {
+        console.error('[Tasks] error loading tasks', e);
+        this.loading = false;
+      }
     });
   }
 
@@ -143,7 +150,8 @@ export class TasksListComponent implements OnInit, OnDestroy {
 
   get filteredTasks() {
     let list = this.tasks;
-    if (this.filterAssignedToMe && this.me) list = list.filter(t => t.assigneeId === this.me.id);
+    const me = this.me;
+    if (this.filterAssignedToMe && me) list = list.filter(t => t.assigneeId === me.id);
     if (this.filterStatus !== 'ALL') list = list.filter(t => t.status === this.filterStatus);
     if (this.filterPriority !== 'ALL') list = list.filter(t => (t.priority || 'MEDIUM') === this.filterPriority);
     if (this.caseSearch !== null) list = list.filter(t => t.caseNumber === this.caseSearch);
@@ -151,8 +159,9 @@ export class TasksListComponent implements OnInit, OnDestroy {
   }
 
   get myTaskCount() {
-    if (!this.me) return 0;
-    return this.tasks.filter(t => t.assigneeId === this.me.id).length;
+    const me = this.me;
+    if (!me) return 0;
+    return this.tasks.filter(t => t.assigneeId === me.id).length;
   }
 
   countByStatus(s: string) { return this.tasks.filter(t => t.status === s).length; }
@@ -172,8 +181,13 @@ export class TasksListComponent implements OnInit, OnDestroy {
       autoAssign: this.autoAssign
     }).subscribe({
       next: t => {
-        this.tasks.push(t);
-        this.tasks.sort((a, b) => (a.caseNumber ?? 0) - (b.caseNumber ?? 0));
+        const idx = this.tasks.findIndex(task => task.id === t.id);
+        if (idx !== -1) {
+          this.tasks[idx] = t;
+        } else {
+          this.tasks.push(t);
+        }
+        this.tasks = [...this.tasks].sort((a, b) => (a.caseNumber ?? 0) - (b.caseNumber ?? 0));
         this.showForm = false;
         this.autoAssign = false;
         this.form.patchValue({ title: '', description: '', assigneeId: '', status: 'TODO', priority: 'MEDIUM', type: 'TASK' });
@@ -244,10 +258,10 @@ export class TasksListComponent implements OnInit, OnDestroy {
   slaLabel(task: Task): string {
     if (!task.slaDeadline) return '';
     const diffH = (new Date(task.slaDeadline).getTime() - Date.now()) / 3600000;
-    if (diffH < 0) return 'SLA przekroczone';
+    if (diffH < 0) return 'SLA exceeded';
     if (diffH < 1) return `SLA: ${Math.ceil(diffH * 60)}min`;
     if (diffH < 24) return `SLA: ${Math.ceil(diffH)}h`;
-    return `SLA: ${new Date(task.slaDeadline).toLocaleDateString('pl-PL')}`;
+    return `SLA: ${new Date(task.slaDeadline).toLocaleDateString('en-GB')}`;
   }
 
   slaClass(task: Task): string {

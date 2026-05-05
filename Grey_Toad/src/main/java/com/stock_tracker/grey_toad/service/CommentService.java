@@ -9,6 +9,7 @@ import com.stock_tracker.grey_toad.entity.Comment;
 import com.stock_tracker.grey_toad.entity.Task;
 import com.stock_tracker.grey_toad.entity.User;
 import com.stock_tracker.grey_toad.exceptions.NotFoundException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,13 +22,16 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public CommentService(CommentRepository commentRepository,
                           TaskRepository taskRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          SimpMessagingTemplate messagingTemplate) {
         this.commentRepository = commentRepository;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public CommentResponse create(UUID taskId, CreateCommentRequest request) {
@@ -45,8 +49,9 @@ public class CommentService {
         comment.setCreatedAt(LocalDateTime.now());
 
         Comment saved = commentRepository.save(comment);
-
-        return mapToResponse(saved);
+        CommentResponse response = mapToResponse(saved);
+        messagingTemplate.convertAndSend("/topic/task/" + taskId + "/comments", response);
+        return response;
     }
 
     public List<CommentResponse> getByTask(UUID taskId) {

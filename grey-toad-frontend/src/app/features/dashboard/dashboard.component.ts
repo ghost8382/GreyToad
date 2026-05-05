@@ -80,8 +80,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getGreeting() {
     const h = new Date().getHours();
-    if (h < 12) return 'Dzień dobry';
-    if (h < 18) return 'Dzień dobry';
-    return 'Dobry wieczór';
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
   }
 }

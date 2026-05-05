@@ -43,7 +43,7 @@
     <button
       class="proj-tab"
       [class.active]="selectedProjectId === ''"
-      (click)="selectedProjectId=''; teams=[]"
+      (click)="loadAllTeams()"
     >All</button>
     <button
       *ngFor="let p of projects"
@@ -55,16 +55,11 @@
 
   <div class="spinner" *ngIf="loading"></div>
 
-  <!-- Admin/leader: prompt to pick project -->
-  <div class="empty-state" *ngIf="!isUserRole && !loading && !selectedProjectId">
+  <div class="empty-state" *ngIf="!isUserRole && !loading && teams.length === 0">
     <div class="empty-icon">👥</div>
-    <p>Select a project to view its teams</p>
-  </div>
-
-  <div class="empty-state" *ngIf="!isUserRole && !loading && selectedProjectId && teams.length === 0">
-    <div class="empty-icon">👥</div>
-    <p *ngIf="isAdmin">No teams in this project. Create the first one!</p>
-    <p *ngIf="!isAdmin">No teams in this project yet.</p>
+    <p *ngIf="isAdmin && selectedProjectId">No teams in this project. Create the first one!</p>
+    <p *ngIf="!isAdmin && selectedProjectId">No teams in this project yet.</p>
+    <p *ngIf="!selectedProjectId">No teams found across any project.</p>
   </div>
 
   <!-- User: no teams -->
@@ -73,7 +68,30 @@
     <p>You haven't been assigned to any team yet.</p>
   </div>
 
-  <div class="teams-grid" *ngIf="!loading && teams.length > 0 && (!isUserRole ? selectedProjectId : true)">
+  <!-- All projects: grouped view -->
+  <ng-container *ngIf="!loading && teams.length > 0 && !selectedProjectId">
+    <div class="project-section" *ngFor="let group of teamsByProject">
+      <div class="project-divider">
+        <span class="project-divider-label">{{ group.projectName }}</span>
+        <div class="project-divider-line"></div>
+      </div>
+      <div class="teams-grid">
+        <a *ngFor="let team of group.teams" [routerLink]="['/teams', team.id]" class="team-card">
+          <div class="team-card-header">
+            <div class="team-avatar">{{ team.name.slice(0,2).toUpperCase() }}</div>
+            <button class="btn btn-danger btn-sm delete-btn" *ngIf="isAdmin" (click)="delete(team.id, $event)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+          <div class="team-name">{{ team.name }}</div>
+          <div class="team-meta text-sm text-muted">View members →</div>
+        </a>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Single project: flat grid -->
+  <div class="teams-grid" *ngIf="!loading && teams.length > 0 && selectedProjectId">
     <a
       *ngFor="let team of teams"
       [routerLink]="['/teams', team.id]"
@@ -86,7 +104,6 @@
         </button>
       </div>
       <div class="team-name">{{ team.name }}</div>
-      <div class="team-project text-sm text-muted">{{ getProjectName(team.projectId ?? '') }}</div>
       <div class="team-meta text-sm text-muted">View members →</div>
     </a>
   </div>

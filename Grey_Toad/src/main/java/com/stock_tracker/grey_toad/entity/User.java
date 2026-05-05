@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -42,4 +43,12 @@ public class User {
 
     @Column(columnDefinition = "boolean default false")
     private Boolean deleted;
+
+    @Column(name = "head_admin", columnDefinition = "boolean default false")
+    private boolean headAdmin = false;
+
+    @Column(name = "is_online", columnDefinition = "boolean default false")
+    private boolean online = false;
+
+    private LocalDateTime lastSeen;
 }

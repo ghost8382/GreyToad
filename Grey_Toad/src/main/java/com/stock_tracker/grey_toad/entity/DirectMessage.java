@@ -1,5 +1,6 @@
 package com.stock_tracker.grey_toad.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -27,4 +28,7 @@ public class DirectMessage {
 
     private String content;
     private LocalDateTime createdAt;
+
+    @Column(columnDefinition = "boolean default false")
+    private boolean read = false;
 }

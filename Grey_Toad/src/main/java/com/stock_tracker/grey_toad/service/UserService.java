@@ -67,6 +67,11 @@ public class UserService {
 
     @Transactional
     public void delete(UUID id) {
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (target.isHeadAdmin()) {
+            throw new com.stock_tracker.grey_toad.exceptions.ForbiddenException("Cannot delete the Head Admin account");
+        }
         userRepository.softDeleteById(id);
     }
 
@@ -104,6 +109,9 @@ public class UserService {
         }
         User target = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        if (target.isHeadAdmin()) {
+            throw new com.stock_tracker.grey_toad.exceptions.ForbiddenException("Cannot change the role of the Head Admin");
+        }
         target.setRole(role);
         return mapToResponse(userRepository.save(target));
     }
@@ -134,6 +142,9 @@ public class UserService {
                 .jobTitle(user.getJobTitle())
                 .quote(user.getQuote())
                 .status(user.getStatus())
+                .isOnline(user.isOnline())
+                .lastSeen(user.getLastSeen())
+                .headAdmin(user.isHeadAdmin())
                 .build();
     }
 }

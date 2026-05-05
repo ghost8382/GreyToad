@@ -2,9 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of, Subscription } from 'rxjs';
 import { TaskService, UserService, AttachmentService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ChatWsService } from '../../../core/services/chat-ws.service';
 import { Task, Comment, User, TimeEntry, Attachment } from '../../../shared/models';
 
 @Component({
@@ -28,6 +29,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
   uploading = false;
   liveTimerDisplay = '';
   private timerInterval: any;
+  private commentSub?: Subscription;
 
   commentForm = this.fb.group({ content: ['', Validators.required] });
   timeForm = this.fb.group({
@@ -45,6 +47,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     private userService: UserService,
     private attachmentService: AttachmentService,
     private auth: AuthService,
+    private ws: ChatWsService,
     private fb: FormBuilder
   ) {}
 
@@ -69,12 +72,22 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
         this.attachments = attachments;
         this.loading = false;
         this.startLiveTimer();
+        this.ws.subscribeToTaskComments(id);
+        this.commentSub = this.ws.commentUpdate$.subscribe(c => {
+          if (!this.comments.some(existing => existing.id === c.id)) {
+            this.comments = [...this.comments, c];
+          }
+        });
       },
       error: () => { this.loading = false; }
     });
   }
 
-  ngOnDestroy() { this.stopLiveTimer(); }
+  ngOnDestroy() {
+    this.stopLiveTimer();
+    this.commentSub?.unsubscribe();
+    this.ws.unsubscribeFromTaskComments();
+  }
 
   acceptTask() {
     if (!this.task) return;
@@ -135,7 +148,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
       content: this.commentForm.value.content!,
       authorId: me.id
     }).subscribe({
-      next: c => { this.comments.push(c); this.commentForm.reset(); this.saving = false; },
+      next: () => { this.commentForm.reset(); this.saving = false; },
       error: () => { this.saving = false; }
     });
   }
@@ -219,7 +232,7 @@ export class TaskDetailComponent implements OnInit, OnDestroy {
     if (diffH < 0) return 'SLA exceeded';
     if (diffH < 1) return `SLA: ${Math.ceil(diffH * 60)}min`;
     if (diffH < 24) return `SLA: ${Math.ceil(diffH)}h`;
-    return `SLA: ${new Date(task.slaDeadline).toLocaleDateString('pl-PL')}`;
+    return `SLA: ${new Date(task.slaDeadline).toLocaleDateString('en-GB')}`;
   }
 
   slaClass(task: Task): string {

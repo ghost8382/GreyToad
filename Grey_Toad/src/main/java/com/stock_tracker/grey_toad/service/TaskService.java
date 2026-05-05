@@ -37,6 +37,7 @@ public class TaskService {
     private final TimeEntryRepository timeEntryRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final AuditLogService auditLogService;
+    private final AppNotificationService appNotificationService;
 
     public TaskService(TaskRepository taskRepository,
                        ProjectRepository projectRepository,
@@ -45,7 +46,8 @@ public class TaskService {
                        TeamRepository teamRepository,
                        TimeEntryRepository timeEntryRepository,
                        SimpMessagingTemplate messagingTemplate,
-                       AuditLogService auditLogService) {
+                       AuditLogService auditLogService,
+                       AppNotificationService appNotificationService) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
@@ -54,6 +56,7 @@ public class TaskService {
         this.timeEntryRepository = timeEntryRepository;
         this.messagingTemplate = messagingTemplate;
         this.auditLogService = auditLogService;
+        this.appNotificationService = appNotificationService;
     }
 
     public TaskResponse create(CreateTaskRequest request, String userEmail) {
@@ -74,11 +77,14 @@ public class TaskService {
         task.setCaseNumber((int) count + 1);
 
         if (request.isAutoAssign()) {
-            task.setAssignee(findLeastLoadedMember(project));
+            User assigned = findLeastLoadedMember(project);
+            task.setAssignee(assigned);
+            if (assigned != null) task.setAcceptanceStatus("PENDING");
         } else if (request.getAssigneeId() != null) {
             User user = userRepository.findById(request.getAssigneeId())
                     .orElseThrow(() -> new NotFoundException("User not found"));
             task.setAssignee(user);
+            task.setAcceptanceStatus("PENDING");
         }
 
         Task saved = taskRepository.save(task);
@@ -227,10 +233,12 @@ public class TaskService {
     }
 
     private void closeOpenTimeEntry(UUID taskId) {
-        timeEntryRepository.findByTaskIdAndEndedAtIsNull(taskId).ifPresent(entry -> {
+        timeEntryRepository.findFirstByTaskIdAndEndedAtIsNull(taskId).ifPresent(entry -> {
             LocalDateTime now = LocalDateTime.now();
             entry.setEndedAt(now);
-            entry.setMinutes((int) Duration.between(entry.getStartedAt(), now).toMinutes());
+            if (entry.getStartedAt() != null) {
+                entry.setMinutes((int) Duration.between(entry.getStartedAt(), now).toMinutes());
+            }
             timeEntryRepository.save(entry);
         });
     }
@@ -278,17 +286,28 @@ public class TaskService {
     }
 
     private void sendTaskNotification(Task task) {
+        String projectId = task.getProject() != null ? task.getProject().getId().toString() : null;
         AppNotificationDto notification = AppNotificationDto.builder()
                 .type("TASK_ASSIGNED")
-                .title("Przypisano Ci zadanie")
+                .title("You have been assigned a task")
                 .body("#" + task.getCaseNumber() + " " + task.getTitle())
-                .projectId(task.getProject() != null ? task.getProject().getId().toString() : null)
+                .projectId(projectId)
                 .build();
         messagingTemplate.convertAndSendToUser(
                 task.getAssignee().getEmail(),
                 "/queue/notifications",
                 notification
         );
+        // Only persist for offline users — online users receive via WS
+        if (!task.getAssignee().isOnline()) {
+            appNotificationService.persist(
+                    task.getAssignee().getId(),
+                    "TASK_ASSIGNED",
+                    notification.getTitle(),
+                    notification.getBody(),
+                    projectId
+            );
+        }
     }
 
     private TaskResponse mapToResponse(Task task) {
@@ -299,8 +318,9 @@ public class TaskService {
 
     private TaskResponse mapToResponse(Task task, List<String> teamNames) {
         int closedMinutes = timeEntryRepository.sumMinutesByTaskId(task.getId());
-        var activeSession = timeEntryRepository.findByTaskIdAndEndedAtIsNull(task.getId());
+        var activeSession = timeEntryRepository.findFirstByTaskIdAndEndedAtIsNull(task.getId());
         int liveMinutes = activeSession
+                .filter(e -> e.getStartedAt() != null)
                 .map(e -> (int) Duration.between(e.getStartedAt(), LocalDateTime.now()).toMinutes())
                 .orElse(0);
         return TaskResponse.builder()

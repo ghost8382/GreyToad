@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -15,4 +16,5 @@ public class DirectMessageResponse {
     private UUID senderId;
     private UUID receiverId;
     private LocalDateTime createdAt;
+    private List<MessageReactionResponse> reactions;
 }

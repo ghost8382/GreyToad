@@ -36,6 +36,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   loadingConversation = false;
   unreadSnapshot: Record<string, number> = {};
   reactPickerOpenId: string | null = null;
+  reactPickerPos: { top: number; left: number } | null = null;
   readonly QUICK_EMOJIS = ['👍','👎','❤️','😂','🔥','✅','🎉','😮','😢','👀'];
 
   mentionQuery: string | null = null;
@@ -74,6 +75,10 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
       if (u) this.initWs();
     });
 
+    this.directMessageService.getUnreadCounts().subscribe(counts => {
+      this.dmUnread.seed(counts);
+    });
+
     this.userService.getAll().subscribe(users => {
       this.allUsers = users;
       this.route.queryParams.subscribe(p => {
@@ -82,6 +87,17 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
           if (u) this.openConversation(u);
         }
       });
+    });
+
+    this.ws.presenceUpdate$.subscribe(({ userId, isOnline }) => {
+      const idx = this.allUsers.findIndex(u => u.id === userId);
+      if (idx !== -1) {
+        this.allUsers = [...this.allUsers];
+        this.allUsers[idx] = { ...this.allUsers[idx], isOnline };
+        if (this.selectedUser?.id === userId) {
+          this.selectedUser = { ...this.selectedUser, isOnline };
+        }
+      }
     });
   }
 
@@ -111,6 +127,9 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.messages = [...this.historyMap[otherId]];
         this.dmUnread.clear(otherId);
         this.shouldScroll = true;
+        if (msg.senderId !== this.me?.id) {
+          this.directMessageService.markConversationRead(msg.senderId).subscribe();
+        }
       } else if (msg.senderId !== this.me?.id) {
         this.dmUnread.increment(otherId);
       }
@@ -152,6 +171,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.dmUnread.clear(user.id);
     this.messages = [...(this.historyMap[user.id] ?? [])];
     this.fetchHistory(user.id, true);
+    this.directMessageService.markConversationRead(user.id).subscribe();
   }
 
   private fetchHistory(userId: string, showLoading: boolean) {
@@ -257,11 +277,23 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   openReactPicker(msgId: string, event: MouseEvent) {
     event.stopPropagation();
-    this.reactPickerOpenId = this.reactPickerOpenId === msgId ? null : msgId;
+    if (this.reactPickerOpenId === msgId) {
+      this.reactPickerOpenId = null;
+      this.reactPickerPos = null;
+      return;
+    }
+    const btn = event.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    const pickerH = 44;
+    const pickerW = 314;
+    const top = rect.top > pickerH + 12 ? rect.top - pickerH - 8 : rect.bottom + 8;
+    const left = Math.max(8, rect.right - pickerW);
+    this.reactPickerOpenId = msgId;
+    this.reactPickerPos = { top, left };
   }
 
   @HostListener('document:click')
-  closeOverlays() { this.emojiPickerOpen = false; this.mentionQuery = null; this.reactPickerOpenId = null; }
+  closeOverlays() { this.emojiPickerOpen = false; this.mentionQuery = null; this.reactPickerOpenId = null; this.reactPickerPos = null; }
 
   renderContent(text: string): SafeHtml {
     let html = text
@@ -305,6 +337,11 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   hasHistory(user: User): boolean { return (this.historyMap[user.id]?.length ?? 0) > 0; }
   hasUnread(user: User): boolean { return (this.unreadSnapshot[user.id] ?? 0) > 0; }
   getUnreadCount(user: User): number { return this.unreadSnapshot[user.id] ?? 0; }
+
+  getEffectiveStatus(user: User): string {
+    if (!user.isOnline) return 'OFFLINE';
+    return user.status || 'AVAILABLE';
+  }
 
   getStatusColor(status?: string): string {
     const map: Record<string, string> = {

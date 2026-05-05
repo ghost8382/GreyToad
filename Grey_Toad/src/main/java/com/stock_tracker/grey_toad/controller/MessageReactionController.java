@@ -2,6 +2,7 @@ package com.stock_tracker.grey_toad.controller;
 
 import com.stock_tracker.grey_toad.dto.MessageReactionResponse;
 import com.stock_tracker.grey_toad.service.MessageReactionService;
+import com.stock_tracker.grey_toad.service.MessageService;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
@@ -12,15 +13,21 @@ import java.util.UUID;
 public class MessageReactionController {
 
     private final MessageReactionService service;
+    private final MessageService messageService;
 
-    public MessageReactionController(MessageReactionService service) { this.service = service; }
+    public MessageReactionController(MessageReactionService service, MessageService messageService) {
+        this.service = service;
+        this.messageService = messageService;
+    }
 
     @PostMapping
     public List<MessageReactionResponse> toggle(
             @PathVariable UUID messageId,
             @RequestParam String emoji,
             Principal principal) {
-        return service.toggle(messageId, principal.getName(), emoji);
+        List<MessageReactionResponse> result = service.toggle(messageId, principal.getName(), emoji);
+        messageService.broadcastMessageUpdate(messageId);
+        return result;
     }
 
     @GetMapping

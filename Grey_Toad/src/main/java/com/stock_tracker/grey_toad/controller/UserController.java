@@ -3,7 +3,9 @@ package com.stock_tracker.grey_toad.controller;
 import com.stock_tracker.grey_toad.dto.UpdateProfileRequest;
 import com.stock_tracker.grey_toad.dto.UserResponse;
 import com.stock_tracker.grey_toad.entity.User;
+import com.stock_tracker.grey_toad.service.PresenceService;
 import com.stock_tracker.grey_toad.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +19,11 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final PresenceService presenceService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, PresenceService presenceService) {
         this.userService = userService;
+        this.presenceService = presenceService;
     }
 
     @PostMapping
@@ -73,5 +77,11 @@ public class UserController {
                                     Principal principal) {
         if (principal == null) throw new RuntimeException("Unauthorized");
         return userService.setJobTitle(id, jobTitle, principal.getName());
+    }
+
+    @PutMapping("/heartbeat")
+    public ResponseEntity<Void> heartbeat(Authentication authentication) {
+        presenceService.heartbeat(authentication.getName());
+        return ResponseEntity.ok().build();
     }
 }

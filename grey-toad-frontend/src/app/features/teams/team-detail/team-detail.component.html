@@ -65,6 +65,7 @@
               <div class="popover-avatar">{{ getUserName(m.userId).slice(0,2).toUpperCase() }}</div>
               <div class="popover-info">
                 <span class="popover-name">{{ getUserName(m.userId) }}</span>
+                <span class="popover-job" *ngIf="getUserJobTitle(m.userId)">{{ getUserJobTitle(m.userId) }}</span>
                 <span class="popover-email">{{ getUserEmail(m.userId) }}</span>
               </div>
             </div>
@@ -74,7 +75,7 @@
             </div>
             <a [routerLink]="['/messages']" [queryParams]="{userId: m.userId}" class="popover-msg-btn">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Wyślij wiadomość
+              Send message
             </a>
           </div>
         </div>
@@ -89,16 +90,16 @@
           <button
             *ngIf="isAdmin && getUserRole(m.userId) === 'USER'"
             class="btn btn-ghost btn-sm"
-            title="Ustaw jako Lidera"
+            title="Set as Leader"
             (click)="setAsLeader(m)"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            Lider
+            Leader
           </button>
           <button
             *ngIf="isAdmin && getUserRole(m.userId) === 'LEADER'"
             class="btn btn-ghost btn-sm"
-            title="Odbierz rolę Lidera"
+            title="Remove Leader role"
             (click)="demoteToWorker(m)"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

@@ -11,7 +11,9 @@ import {
   TimeEntry, CreateTimeEntryRequest,
   Attachment, AuditLogEntry,
   DirectMessage,
-  User, UpdateProfileRequest
+  User, UpdateProfileRequest,
+  RoleTemplate, CreateRoleTemplateRequest,
+  AppNotification
 } from '../../shared/models';
 
 const API = environment.apiUrl;
@@ -119,6 +121,11 @@ export class UserService {
     return this.http.post<User>(`${API}/users`, data);
   }
   deleteUser(id: string) { return this.http.delete(`${API}/users/${id}`); }
+  heartbeat() { return this.http.put<void>(`${API}/users/heartbeat`, {}); }
+  setJobTitle(id: string, jobTitle: string | null) {
+    const params = jobTitle ? `?jobTitle=${encodeURIComponent(jobTitle)}` : '';
+    return this.http.patch<User>(`${API}/users/${id}/job-title${params}`, {});
+  }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -129,6 +136,12 @@ export class DirectMessageService {
   }
   toggleReaction(dmId: string, emoji: string) {
     return this.http.post<MessageReaction[]>(`${API}/direct-messages/${dmId}/reactions?emoji=${encodeURIComponent(emoji)}`, {});
+  }
+  getUnreadCounts() {
+    return this.http.get<Record<string, number>>(`${API}/direct-messages/unread-counts`);
+  }
+  markConversationRead(otherUserId: string) {
+    return this.http.patch<void>(`${API}/direct-messages/${otherUserId}/mark-read`, {});
   }
 }
 
@@ -143,4 +156,20 @@ export class AuditLogService {
 @Injectable({ providedIn: 'root' })
 export class AttachmentService {
   getDownloadUrl(id: string): string { return `${API}/attachments/${id}/download`; }
+}
+
+@Injectable({ providedIn: 'root' })
+export class RoleTemplateService {
+  constructor(private http: HttpClient) {}
+  getAll()                              { return this.http.get<RoleTemplate[]>(`${API}/role-templates`); }
+  create(r: CreateRoleTemplateRequest) { return this.http.post<RoleTemplate>(`${API}/role-templates`, r); }
+  delete(id: string)                   { return this.http.delete(`${API}/role-templates/${id}`); }
+}
+
+@Injectable({ providedIn: 'root' })
+export class NotificationApiService {
+  constructor(private http: HttpClient) {}
+  getMine()             { return this.http.get<AppNotification[]>(`${API}/notifications/mine`); }
+  markAllRead()         { return this.http.patch<void>(`${API}/notifications/read-all`, {}); }
+  markOneRead(id: string) { return this.http.patch<void>(`${API}/notifications/${id}/read`, {}); }
 }

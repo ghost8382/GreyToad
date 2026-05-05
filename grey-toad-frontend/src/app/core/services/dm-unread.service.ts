@@ -6,6 +6,10 @@ export class DmUnreadService {
   private _map$ = new BehaviorSubject<Record<string, number>>({});
   readonly map$ = this._map$.asObservable();
 
+  seed(counts: Record<string, number>) {
+    this._map$.next({ ...counts });
+  }
+
   increment(senderId: string) {
     const m = { ...this._map$.value };
     m[senderId] = (m[senderId] || 0) + 1;

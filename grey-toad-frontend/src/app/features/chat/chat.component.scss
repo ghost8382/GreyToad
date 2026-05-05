@@ -14,8 +14,8 @@
 
 /* ---- Channel sidebar ---- */
 .channel-sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 240px;
+  min-width: 240px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   display: flex;
@@ -29,24 +29,59 @@
 
 .team-selector {
   display: flex;
-  gap: 6px;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.team-selector-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px;
+  font-style: italic;
 }
 
 .team-tab {
-  width: 32px; height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 8px;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+
+  &:hover { background: var(--bg-hover); color: var(--text-secondary); }
+  &.active { background: var(--bg-tertiary); color: var(--text-primary); }
+}
+
+.team-tab-icon {
+  width: 22px; height: 22px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font); font-size: 10px; font-weight: 700;
-  color: var(--text-muted); cursor: pointer;
-  transition: all var(--transition);
+  font-size: 8px; font-weight: 700;
+  flex-shrink: 0;
+  transition: border-color var(--transition);
 
-  &:hover { border-color: var(--border-hover); color: var(--text-secondary); }
-  &.active { border-color: var(--border-focus); color: var(--text-primary); background: var(--bg-hover); }
+  .team-tab.active & { border-color: var(--border-focus); }
+}
+
+.team-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
 
 .channels-list {
@@ -185,6 +220,9 @@
   max-width: 75%;
   align-self: flex-start;
   animation: fadeIn 0.15s ease;
+  position: relative;
+
+  &:hover, &.react-open { z-index: 5; }
 
   &.own {
     align-self: flex-end;
@@ -254,6 +292,10 @@
 }
 .popover-name {
   font-weight: 600; font-size: 14px; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.popover-job {
+  font-size: 11px; color: var(--accent); font-weight: 500;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .popover-email {
@@ -462,10 +504,17 @@
   box-shadow: 0 4px 16px rgba(0,0,0,0.35);
   z-index: 20;
   white-space: nowrap;
-  // Bridge fills the gap between picker and action bar
-  &::after {
-    content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 8px;
-  }
+}
+
+.react-picker-fixed {
+  position: fixed;
+  display: flex; gap: 2px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  padding: 4px 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  z-index: 9999;
 }
 .rp-emoji {
   background: none; border: none; cursor: pointer;
@@ -479,6 +528,7 @@
   display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
 }
 .reaction-pill {
+  position: relative;
   display: inline-flex; align-items: center; gap: 3px;
   background: var(--bg-tertiary); border: 1px solid var(--border);
   border-radius: 12px; padding: 2px 8px;
@@ -486,6 +536,25 @@
   font-family: var(--font);
   &:hover { border-color: var(--border-hover); background: var(--bg-hover); }
   &.reacted { border-color: var(--border-focus); background: rgba(90,138,170,0.15); }
+
+  .reaction-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 200;
+    pointer-events: none;
+    color: var(--text-secondary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  &:hover .reaction-tooltip { display: block; }
 }
 
 .thread-highlighted .msg-bubble { border-color: var(--border-focus); }

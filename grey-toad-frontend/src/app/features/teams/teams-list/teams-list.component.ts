@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import { TeamService, ProjectService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProjectContextService } from '../../../core/services/project-context.service';
@@ -55,16 +56,29 @@ export class TeamsListComponent implements OnInit {
           if (toSelect) {
             this.selectProject(toSelect);
             this.form.patchValue({ projectId: toSelect });
+          } else {
+            this.loadAllTeams();
           }
         });
       });
     }
   }
 
+  loadAllTeams() {
+    this.selectedProjectId = '';
+    this.teams = [];
+    if (!this.projects.length) return;
+    this.loading = true;
+    forkJoin(this.projects.map(p => this.teamService.getByProject(p.id))).subscribe({
+      next: results => { this.teams = results.flat(); this.loading = false; },
+      error: () => { this.loading = false; }
+    });
+  }
+
   selectProject(projectId: string) {
     this.selectedProjectId = projectId;
     this.teams = [];
-    if (!projectId) return;
+    if (!projectId) { this.loadAllTeams(); return; }
     this.loading = true;
     this.form.patchValue({ projectId });
     this.teamService.getByProject(projectId).subscribe({
@@ -101,4 +115,14 @@ export class TeamsListComponent implements OnInit {
   get isAdmin() { return this.auth.isAdmin; }
   get isAdminOrLeader() { return this.auth.isAdminOrLeader; }
   getProjectName(id: string) { return this.projects.find(p => p.id === id)?.name || ''; }
+
+  get teamsByProject(): { projectId: string; projectName: string; teams: Team[] }[] {
+    const groups: Record<string, { projectName: string; teams: Team[] }> = {};
+    for (const team of this.teams) {
+      const pid = team.projectId ?? '';
+      if (!groups[pid]) groups[pid] = { projectName: this.getProjectName(pid), teams: [] };
+      groups[pid].teams.push(team);
+    }
+    return Object.entries(groups).map(([projectId, { projectName, teams }]) => ({ projectId, projectName, teams }));
+  }
 }

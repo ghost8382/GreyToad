@@ -31,19 +31,20 @@
     <!-- Team chats mode -->
     <ng-container *ngIf="sidebarMode === 'teams'">
       <div class="team-selector">
+        <div class="team-selector-empty" *ngIf="teams.length === 0">No teams in this project</div>
         <button
           *ngFor="let t of teams"
           class="team-tab"
           [class.active]="selectedTeam === t.id"
           (click)="selectTeam(t.id)"
-          [title]="t.name"
         >
-          {{ t.name.slice(0,2).toUpperCase() }}
+          <span class="team-tab-icon">{{ t.name.slice(0,2).toUpperCase() }}</span>
+          <span class="team-tab-name">{{ t.name }}</span>
         </button>
       </div>
 
       <div class="channels-list">
-        <div class="empty-hint" *ngIf="!selectedTeam">← Select a team</div>
+        <div class="empty-hint" *ngIf="teams.length > 0 && !selectedTeam">← Select a team</div>
         <div class="empty-hint" *ngIf="selectedTeam && channels.length === 0">No channels yet</div>
         <div class="channel-row" *ngFor="let ch of channels" [class.active]="selectedChannel?.id === ch.id">
           <button class="channel-btn" (click)="openChannel(ch)">
@@ -173,9 +174,6 @@
                 Resolved
               </span>
               <div class="post-card-actions">
-                <div class="react-picker-mini" *ngIf="reactPickerOpenId === post.id" (click)="$event.stopPropagation()">
-                  <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(post.id, e)">{{ e }}</button>
-                </div>
                 <button class="msg-action-btn" (click)="openReactPicker(post.id, $event)" title="React">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                 </button>
@@ -196,6 +194,7 @@
               <button *ngFor="let r of post.reactions" class="reaction-pill"
                 [class.reacted]="r.reactedByMe" (click)="toggleReaction(post.id, r.emoji)">
                 {{ r.emoji }} {{ r.count }}
+                <span class="reaction-tooltip" *ngIf="r.reactors && r.reactors.length > 0">{{ r.reactors.join(', ') }}</span>
               </button>
             </div>
           </div>
@@ -224,6 +223,7 @@
                   <div class="popover-avatar">{{ getUserName(msg.senderId).slice(0,2).toUpperCase() }}</div>
                   <div class="popover-info">
                     <span class="popover-name">{{ getUserName(msg.senderId) }}</span>
+                    <span class="popover-job" *ngIf="getUserJobTitle(msg.senderId)">{{ getUserJobTitle(msg.senderId) }}</span>
                     <span class="popover-email">{{ getUserEmail(msg.senderId) }}</span>
                   </div>
                 </div>
@@ -233,7 +233,7 @@
                 </div>
                 <a [routerLink]="['/messages']" [queryParams]="{userId: msg.senderId}" class="popover-msg-btn">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  Wyślij wiadomość
+                  Send message
                 </a>
               </div>
             </div>
@@ -248,9 +248,6 @@
                 <div class="msg-bubble" [innerHTML]="renderContent(msg.content)"></div>
 
                 <div class="msg-actions" *ngIf="!msg.id.startsWith('tmp-')">
-                  <div class="react-picker-mini" *ngIf="reactPickerOpenId === msg.id" (click)="$event.stopPropagation()">
-                    <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(msg.id, e)">{{ e }}</button>
-                  </div>
                   <button class="msg-action-btn" (click)="openReactPicker(msg.id, $event)" title="React">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                   </button>
@@ -265,6 +262,7 @@
                   (click)="toggleReaction(msg.id, r.emoji)"
                 >
                   {{ r.emoji }} {{ r.count }}
+                  <span class="reaction-tooltip" *ngIf="r.reactors && r.reactors.length > 0">{{ r.reactors.join(', ') }}</span>
                 </button>
               </div>
 
@@ -293,7 +291,7 @@
         </div>
 
         <div class="input-wrap">
-          <button class="emoji-trigger" (click)="$event.stopPropagation(); emojiPickerOpen = !emojiPickerOpen" title="Emotki">
+          <button class="emoji-trigger" (click)="$event.stopPropagation(); emojiPickerOpen = !emojiPickerOpen" title="Emoji">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </button>
           <textarea
@@ -413,5 +411,14 @@
         <span *ngIf="creating">Creating...</span>
       </button>
     </div>
+  </div>
+
+  <!-- Fixed reaction picker — bypasses all parent overflow clipping -->
+  <div *ngIf="reactPickerOpenId && reactPickerPos"
+       class="react-picker-fixed"
+       [style.top.px]="reactPickerPos!.top"
+       [style.left.px]="reactPickerPos!.left"
+       (click)="$event.stopPropagation()">
+    <button *ngFor="let e of QUICK_EMOJIS" class="rp-emoji" (click)="toggleReaction(reactPickerOpenId!, e)">{{ e }}</button>
   </div>
 </div>

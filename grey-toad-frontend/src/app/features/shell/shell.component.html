@@ -18,7 +18,7 @@
     <div class="project-selector" *ngIf="!sidebarCollapsed">
       <button class="project-select-btn" (click)="projectSelectorOpen = !projectSelectorOpen">
         <span class="proj-dot" [class]="projectColorClass(selectedProject?.name)"></span>
-        <span class="project-select-name">{{ selectedProject?.name || 'Wybierz projekt' }}</span>
+        <span class="project-select-name">{{ selectedProject?.name || 'Select project' }}</span>
         <span class="proj-notif-badge" *ngIf="projectBadgeCount > 0">{{ projectBadgeCount > 99 ? '99+' : projectBadgeCount }}</span>
         <svg class="chevron" [class.open]="projectSelectorOpen" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
@@ -39,7 +39,7 @@
             {{ getProjectUnread(p.id) > 99 ? '99+' : getProjectUnread(p.id) }}
           </span>
         </button>
-        <div class="project-empty" *ngIf="!projects.length">Brak projektów</div>
+        <div class="project-empty" *ngIf="!projects.length">No projects</div>
       </div>
     </div>
     <div class="project-selector-collapsed" *ngIf="sidebarCollapsed && selectedProject" [title]="selectedProject.name">
@@ -87,7 +87,7 @@
         </div>
         <div class="user-details" *ngIf="!sidebarCollapsed">
           <span class="user-name">{{ user.username }}</span>
-          <span class="user-role-label" [class.rainbow]="user.role === 'ADMIN'">{{ roleLabel }}</span>
+          <span class="user-role-label" [class.rainbow]="user.role === 'ADMIN'">{{ profileLabel }}</span>
         </div>
       </div>
       <button class="btn btn-ghost btn-sm logout-btn" (click)="logout()" title="Sign out">
@@ -113,7 +113,7 @@
         [(ngModel)]="searchQuery"
         (ngModelChange)="onSearchInput()"
         (keydown.escape)="closeSearch()"
-        placeholder="Szukaj zadań w projekcie {{ selectedProject?.name || '' }}…"
+        placeholder="Search tasks in project {{ selectedProject?.name || '' }}…"
         autofocus
       />
       <span class="search-esc-hint">ESC</span>
@@ -122,7 +122,7 @@
       <div class="search-spinner" *ngIf="searchLoading">
         <span class="spinner"></span>
       </div>
-      <div class="search-empty" *ngIf="!searchLoading && searchResults.length === 0">Brak wyników dla "{{ searchQuery }}"</div>
+      <div class="search-empty" *ngIf="!searchLoading && searchResults.length === 0">No results for "{{ searchQuery }}"</div>
       <a
         *ngFor="let t of searchResults"
         class="search-result-item"
@@ -143,26 +143,31 @@
 
 <!-- Bell — fixed top-right overlay (task assignments only) -->
 <div class="bell-overlay">
-  <button class="bell-overlay-btn search-trigger-btn" (click)="openSearch()" title="Szukaj zadań (/)">
+  <button class="bell-overlay-btn search-trigger-btn" (click)="openSearch()" title="Search tasks (/)">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
   </button>
-  <button class="bell-overlay-btn" (click)="toggleBell()" title="Powiadomienia o zadaniach">
+  <button class="bell-overlay-btn" (click)="toggleBell()" title="Task notifications">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
     <span class="bell-badge" *ngIf="bellCount > 0">{{ bellCount > 99 ? '99+' : bellCount }}</span>
   </button>
 
   <div class="notif-panel" *ngIf="bellOpen">
     <div class="notif-panel-header">
-      <span>Przypisane zadania</span>
-      <button class="notif-clear" (click)="clearNotifications()">Wyczyść</button>
+      <span>Notifications</span>
+      <button class="notif-clear" (click)="clearNotifications()">Clear</button>
     </div>
-    <div class="notif-empty" *ngIf="taskNotifications.length === 0">Brak nowych zadań</div>
-    <div class="notif-item" *ngFor="let n of taskNotifications">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a9a6a" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <div class="notif-empty" *ngIf="taskNotifications.length === 0">No new notifications</div>
+    <div class="notif-item" *ngFor="let n of taskNotifications; let i = index">
+      <svg *ngIf="n.type === 'TASK_ASSIGNED'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a9a6a" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <svg *ngIf="n.type === 'MENTION'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a8aaa" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>
+      <svg *ngIf="n.type === 'DM'" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e8a44a" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <div class="notif-item-body">
         <span class="notif-item-label">{{ n.title }}</span>
         <span class="notif-item-title">{{ n.body }}</span>
       </div>
+      <button class="notif-dismiss" (click)="dismissNotification(i)" title="Mark as read">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
   </div>
 </div>

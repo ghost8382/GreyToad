@@ -52,8 +52,8 @@ public class MessageController {
     }
 
     @GetMapping("/threads")
-    public List<MessageResponse> getThreadStarters(@PathVariable UUID channelId) {
-        return messageService.getThreadStarters(channelId);
+    public List<MessageResponse> getThreadStarters(@PathVariable UUID channelId, Principal principal) {
+        return messageService.getThreadStarters(channelId, principal != null ? principal.getName() : null);
     }
 
     @GetMapping("/posts")

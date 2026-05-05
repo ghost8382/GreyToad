@@ -14,6 +14,7 @@ import com.stock_tracker.grey_toad.entity.User;
 import com.stock_tracker.grey_toad.exceptions.BadRequestException;
 import com.stock_tracker.grey_toad.exceptions.NotFoundException;
 import com.stock_tracker.grey_toad.exceptions.UnauthorizedException;
+import com.stock_tracker.grey_toad.service.AppNotificationService;
 import com.stock_tracker.grey_toad.service.DirectMessageService;
 import com.stock_tracker.grey_toad.service.MessageService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -22,6 +23,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Controller
@@ -33,19 +37,22 @@ public class ChatWebSocketController {
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final AppNotificationService appNotificationService;
 
     public ChatWebSocketController(SimpMessagingTemplate messagingTemplate,
                                    MessageService messageService,
                                    DirectMessageService directMessageService,
                                    UserRepository userRepository,
                                    ChannelRepository channelRepository,
-                                   TeamMemberRepository teamMemberRepository) {
+                                   TeamMemberRepository teamMemberRepository,
+                                   AppNotificationService appNotificationService) {
         this.messagingTemplate = messagingTemplate;
         this.messageService = messageService;
         this.directMessageService = directMessageService;
         this.userRepository = userRepository;
         this.channelRepository = channelRepository;
         this.teamMemberRepository = teamMemberRepository;
+        this.appNotificationService = appNotificationService;
     }
 
     @MessageMapping("/chat.send/{channelId}")
@@ -55,24 +62,62 @@ public class ChatWebSocketController {
         User sender = requireUser(principal);
         MessageResponse saved = messageService.send(channelId, sender.getEmail(), request.getContent());
 
-        // Broadcast message to everyone subscribed to this channel topic
         messagingTemplate.convertAndSend("/topic/channel/" + channelId, saved);
 
-        // Send notification to all team members except the sender
         Channel channel = channelRepository.findById(channelId)
                 .orElseThrow(() -> new NotFoundException("Channel not found"));
 
-        AppNotificationDto notification = AppNotificationDto.builder()
+        AppNotificationDto channelNotif = AppNotificationDto.builder()
                 .type("CHANNEL_MESSAGE")
-                .title("Nowa wiadomość w #" + channel.getName())
+                .title("New message in #" + channel.getName())
                 .body(truncate(request.getContent(), 80))
                 .build();
+
+        List<User> allUsers = userRepository.findAll();
+        Set<UUID> mentionedIds = findMentionedUserIds(request.getContent(), allUsers, sender.getId());
+
+        for (User u : allUsers) {
+            if (mentionedIds.contains(u.getId())) {
+                AppNotificationDto mentionNotif = AppNotificationDto.builder()
+                        .type("MENTION")
+                        .title(sender.getUsername() + " mentioned you in #" + channel.getName())
+                        .body(truncate(request.getContent(), 80))
+                        .build();
+                messagingTemplate.convertAndSendToUser(u.getEmail(), "/queue/notifications", mentionNotif);
+                // Only persist for offline users
+                if (!u.isOnline()) {
+                    appNotificationService.persist(
+                            u.getId(), "MENTION",
+                            mentionNotif.getTitle(), mentionNotif.getBody(),
+                            channel.getTeam() != null && channel.getTeam().getProject() != null
+                                    ? channel.getTeam().getProject().getId().toString() : null
+                    );
+                }
+            }
+        }
 
         teamMemberRepository.findByTeamId(channel.getTeam().getId()).stream()
                 .map(TeamMember::getUser)
                 .filter(u -> !u.getId().equals(sender.getId()))
+                .filter(u -> !mentionedIds.contains(u.getId()))
                 .forEach(u -> messagingTemplate.convertAndSendToUser(
-                        u.getEmail(), "/queue/notifications", notification));
+                        u.getEmail(), "/queue/notifications", channelNotif));
+    }
+
+    private Set<UUID> findMentionedUserIds(String content, List<User> allUsers, UUID senderId) {
+        Set<UUID> result = new HashSet<>();
+        if (content == null || content.isEmpty()) return result;
+        for (User u : allUsers) {
+            if (u.getId().equals(senderId)) continue;
+            String tag = "@" + u.getUsername();
+            int idx = content.indexOf(tag);
+            if (idx < 0) continue;
+            int afterIdx = idx + tag.length();
+            if (afterIdx >= content.length() || !Character.isLetterOrDigit(content.charAt(afterIdx))) {
+                result.add(u.getId());
+            }
+        }
+        return result;
     }
 
     @MessageMapping("/dm.send")
@@ -90,17 +135,23 @@ public class ChatWebSocketController {
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        // Deliver the message payload to the receiver's chat view
         messagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/dm", saved);
 
-        // Send notification to receiver via the always-active notifications queue
         AppNotificationDto notification = AppNotificationDto.builder()
                 .type("DM")
-                .title("Nowa wiadomość od " + sender.getUsername())
+                .title("New message from " + sender.getUsername())
                 .body(truncate(request.getContent(), 80))
                 .build();
 
         messagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/notifications", notification);
+
+        // Only persist for offline receivers — online users receive via WS
+        if (!receiver.isOnline()) {
+            appNotificationService.persist(
+                    receiver.getId(), "DM",
+                    notification.getTitle(), notification.getBody(), null
+            );
+        }
     }
 
     private User requireUser(Principal principal) {

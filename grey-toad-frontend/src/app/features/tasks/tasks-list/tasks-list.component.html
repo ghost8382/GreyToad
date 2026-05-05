@@ -194,7 +194,7 @@
             <button class="kc-move-btn" (click)="changeStatus(task, 'IN_PROGRESS')">→ In Progress</button>
           </div>
         </a>
-        <div class="kanban-empty" *ngIf="todoTasks.length === 0">Brak zadań</div>
+        <div class="kanban-empty" *ngIf="todoTasks.length === 0">No cases</div>
       </div>
     </div>
 
@@ -220,7 +220,7 @@
             <button class="kc-move-btn" (click)="changeStatus(task, 'DONE')">→ Done</button>
           </div>
         </a>
-        <div class="kanban-empty" *ngIf="inProgressTasks.length === 0">Brak zadań</div>
+        <div class="kanban-empty" *ngIf="inProgressTasks.length === 0">No cases</div>
       </div>
     </div>
 
@@ -244,7 +244,7 @@
             <button class="kc-move-btn kc-back" (click)="changeStatus(task, 'IN_PROGRESS')">← In Progress</button>
           </div>
         </a>
-        <div class="kanban-empty" *ngIf="doneTasks.length === 0">Brak zadań</div>
+        <div class="kanban-empty" *ngIf="doneTasks.length === 0">No cases</div>
       </div>
     </div>
   </div>
@@ -286,15 +286,15 @@
            (click)="$event.preventDefault(); $event.stopPropagation()">
         <span class="pending-label">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Wymaga akceptacji
+          Requires acceptance
         </span>
         <button class="pa-accept" (click)="acceptTask(task, $event)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Przyjmij
+          Accept
         </button>
         <button class="pa-reject" (click)="rejectTask(task, $event)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          Odrzuć
+          Reject
         </button>
       </div>
 
@@ -307,7 +307,7 @@
           [class.badge-todo]="!task.archived && task.status==='TODO'"
           [class.badge-progress]="!task.archived && task.status==='IN_PROGRESS'"
           [class.badge-done]="!task.archived && task.status==='DONE'">
-          {{ task.archived ? 'Archiwum' : statusLabel(task.status) }}
+          {{ task.archived ? 'Archived' : statusLabel(task.status) }}
         </span>
         <span class="assignee text-sm text-muted">{{ getUserName(task) }}</span>
       </div>
@@ -321,11 +321,11 @@
           <option value="LOW">↓ Low</option>
         </select>
         <!-- SLA button (admin only) -->
-        <button *ngIf="isAdmin && !task.archived" class="icon-btn sla-btn" title="Ustaw SLA" (click)="openSla(task, $event)">
+        <button *ngIf="isAdmin && !task.archived" class="icon-btn sla-btn" title="Set SLA" (click)="openSla(task, $event)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </button>
         <!-- Archive button -->
-        <button *ngIf="canCreateTask" class="icon-btn archive-btn" [title]="task.archived ? 'Przywróć' : 'Archiwizuj'" (click)="archiveTask(task, $event)">
+        <button *ngIf="canCreateTask" class="icon-btn archive-btn" [title]="task.archived ? 'Restore' : 'Archive'" (click)="archiveTask(task, $event)">
           <svg *ngIf="!task.archived" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
           <svg *ngIf="task.archived" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.49"/></svg>
         </button>
@@ -347,11 +347,11 @@
   <!-- SLA inline popup -->
   <div class="sla-popup" *ngIf="slaTaskId" (click)="slaTaskId = null">
     <div class="sla-popup-box" (click)="$event.stopPropagation()">
-      <h4>Ustaw SLA</h4>
+      <h4>Set SLA</h4>
       <input type="datetime-local" class="form-input" [(ngModel)]="slaValue" />
       <div class="sla-popup-actions">
-        <button class="btn btn-ghost btn-sm" (click)="slaTaskId = null">Anuluj</button>
-        <button class="btn btn-primary btn-sm" (click)="saveSla($event)">Zapisz</button>
+        <button class="btn btn-ghost btn-sm" (click)="slaTaskId = null">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="saveSla($event)">Save</button>
       </div>
     </div>
   </div>

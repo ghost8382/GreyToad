@@ -3,7 +3,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Subject, Subscription } from 'rxjs';
+import { Subject, Subscription, combineLatest } from 'rxjs';
 import { ChatWsService } from '../../core/services/chat-ws.service';
 import { ChannelService, TeamService, UserService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -64,6 +64,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   // Reaction quick-pick
   reactPickerOpenId: string | null = null;
+  reactPickerPos: { top: number; left: number } | null = null;
   readonly QUICK_EMOJIS = ['👍','👎','❤️','😂','🔥','✅','🎉','😮','😢','👀'];
 
   readonly EMOJIS = [
@@ -82,9 +83,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   createTeamId = '';
   creating = false;
 
+  private allTeams: Team[] = [];
   private destroy$ = new Subject<void>();
   private wsSub?: Subscription;
   private connSub?: Subscription;
+  private teamSub?: Subscription;
   private optimisticIds = new Set<string>();
 
   constructor(
@@ -101,9 +104,13 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   ngOnInit() {
     this.auth.currentUser$.subscribe(u => this.me = u);
     this.userService.getAll().subscribe(users => this.users = users);
-    this.teamService.getMyTeams().subscribe(t => {
-      const projectId = this.projectContext.selected?.id;
-      this.teams = projectId ? t.filter(team => team.projectId === projectId) : t;
+
+    this.teamSub = combineLatest([
+      this.teamService.getMyTeams(),
+      this.projectContext.selected$
+    ]).subscribe(([allTeams, project]) => {
+      this.allTeams = allTeams;
+      this.teams = project ? allTeams.filter(t => t.projectId === project.id) : allTeams;
       this.route.queryParams.subscribe(p => {
         const teamId = p['teamId'] || this.teams[0]?.id;
         if (teamId) this.selectTeam(teamId, p['channelId']);
@@ -120,13 +127,38 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       }
     });
 
-    this.wsSub = this.ws.channelMessage$.subscribe(msg => {
-      if (msg.channelId !== this.selectedChannel?.id) return;
+    this.wsSub = this.ws.channelMessage$.subscribe(raw => {
+      if (raw.channelId !== this.selectedChannel?.id) return;
+      const msg = this.enrichReactions(raw);
       if (msg.type === 'POST') {
-        this.posts = [msg, ...this.posts.filter(p => p.id !== msg.id)];
+        const idx = this.posts.findIndex(p => p.id === msg.id);
+        if (idx !== -1) {
+          const updated = [...this.posts];
+          updated[idx] = msg;
+          this.posts = updated;
+        } else {
+          this.posts = [msg, ...this.posts];
+        }
+      } else if (msg.parentId) {
+        if (this.threadMessage?.id === msg.parentId) {
+          const replyIdx = this.threadReplies.findIndex(r => r.id === msg.id);
+          if (replyIdx !== -1) {
+            const updated = [...this.threadReplies];
+            updated[replyIdx] = msg;
+            this.threadReplies = updated;
+          } else {
+            this.threadReplies = [...this.threadReplies, msg];
+            const parent = this.messages.find(m => m.id === msg.parentId);
+            if (parent) parent.replyCount = (parent.replyCount || 0) + 1;
+          }
+        } else {
+          const parent = this.messages.find(m => m.id === msg.parentId);
+          if (parent) parent.replyCount = (parent.replyCount || 0) + 1;
+        }
       } else {
+        const isUpdate = this.messages.some(m => m.id === msg.id);
         this.messages = this.mergeMessages(this.messages, [msg]);
-        this.shouldScroll = true;
+        if (!isUpdate) this.shouldScroll = true;
       }
     });
   }
@@ -140,6 +172,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.destroy$.complete();
     this.wsSub?.unsubscribe();
     this.connSub?.unsubscribe();
+    this.teamSub?.unsubscribe();
     this.ws.unsubscribeFromChannel();
   }
 
@@ -236,12 +269,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   submitPost() {
     const text = this.postText.trim();
     if (!text || !this.selectedChannel) return;
-    this.channelService.createPost(this.selectedChannel.id, text).subscribe({
-      next: post => {
-        this.posts = [post, ...this.posts];
-        this.postText = '';
-      }
-    });
+    this.postText = '';
+    this.channelService.createPost(this.selectedChannel.id, text).subscribe();
   }
 
   // ---- Thread ----
@@ -267,12 +296,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   sendReply() {
     const text = this.threadInput.trim();
     if (!text || !this.threadMessage) return;
-    this.channelService.sendReply(this.threadMessage.channelId, this.threadMessage.id, text).subscribe({
-      next: reply => {
-        this.threadReplies.push(reply);
-        this.threadInput = '';
-      }
-    });
+    this.threadInput = '';
+    this.channelService.sendReply(this.threadMessage.channelId, this.threadMessage.id, text).subscribe();
   }
 
   // ---- Channel creation ----
@@ -323,28 +348,31 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   resolvePost(post: Message) {
     if (!this.selectedChannel) return;
-    this.channelService.resolvePost(this.selectedChannel.id, post.id).subscribe(updated => {
-      const idx = this.posts.findIndex(p => p.id === post.id);
-      if (idx !== -1) this.posts[idx] = { ...this.posts[idx], resolved: updated.resolved };
-    });
+    this.channelService.resolvePost(this.selectedChannel.id, post.id).subscribe();
   }
 
   // ---- Reactions ----
 
   toggleReaction(msgId: string, emoji: string) {
-    this.channelService.toggleReaction(msgId, emoji).subscribe(reactions => {
-      const msg = this.messages.find(m => m.id === msgId);
-      if (msg) msg.reactions = reactions;
-      const post = this.posts.find(p => p.id === msgId);
-      if (post) post.reactions = reactions;
-      if (this.threadMessage?.id === msgId) this.threadMessage.reactions = reactions;
-    });
+    this.channelService.toggleReaction(msgId, emoji).subscribe();
     this.reactPickerOpenId = null;
   }
 
   openReactPicker(msgId: string, event: MouseEvent) {
     event.stopPropagation();
-    this.reactPickerOpenId = this.reactPickerOpenId === msgId ? null : msgId;
+    if (this.reactPickerOpenId === msgId) {
+      this.reactPickerOpenId = null;
+      this.reactPickerPos = null;
+      return;
+    }
+    const btn = event.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    const pickerH = 44;
+    const pickerW = 314;
+    const top = rect.top > pickerH + 12 ? rect.top - pickerH - 8 : rect.bottom + 8;
+    const left = Math.max(8, rect.right - pickerW);
+    this.reactPickerOpenId = msgId;
+    this.reactPickerPos = { top, left };
   }
 
   // ---- Input ----
@@ -465,6 +493,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.mentionQuery = null;
     this.postMentionQuery = null;
     this.reactPickerOpenId = null;
+    this.reactPickerPos = null;
   }
 
   renderContent(text: string): SafeHtml {
@@ -510,6 +539,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     return this.users.find(u => u.id === senderId)?.email || '';
   }
 
+  getUserJobTitle(senderId: string): string {
+    return this.users.find(u => u.id === senderId)?.jobTitle || '';
+  }
+
   getUserStatusColor(senderId: string): string {
     const status = this.users.find(u => u.id === senderId)?.status;
     const colors: Record<string, string> = {
@@ -522,10 +555,22 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   getUserStatusLabel(senderId: string): string {
     const status = this.users.find(u => u.id === senderId)?.status;
     const labels: Record<string, string> = {
-      AVAILABLE: 'Dostępny', BREAK: 'Przerwa', DINNER: 'Obiad',
-      OUT_OF_OFFICE: 'Poza biurem', MEETING: 'Spotkanie', OFFLINE: 'Offline'
+      AVAILABLE: 'Available', BREAK: 'Break', DINNER: 'Lunch',
+      OUT_OF_OFFICE: 'Out of office', MEETING: 'Meeting', OFFLINE: 'Offline'
     };
     return labels[status || ''] || 'Offline';
+  }
+
+  private enrichReactions(msg: Message): Message {
+    if (!msg.reactions?.length || !this.me) return msg;
+    const myUsername = this.me.username;
+    return {
+      ...msg,
+      reactions: msg.reactions.map(r => ({
+        ...r,
+        reactedByMe: r.reactors?.includes(myUsername) ?? false
+      }))
+    };
   }
 
   private mergeMessages(existing: Message[], incoming: Message[]): Message[] {

@@ -13,6 +13,7 @@
       <div class="identity-name">{{ user.username }}</div>
       <div class="identity-email text-muted">{{ user.email }}</div>
       <div class="role-badge" [class]="'role-' + user.role.toLowerCase()">{{ roleLabel }}</div>
+      <div class="identity-job-title text-sm text-muted" *ngIf="user.jobTitle">{{ user.jobTitle }}</div>
       <div class="identity-status" *ngIf="user.status">
         <span class="status-dot-sm" [style.background]="getStatusInfo(user.status).color"></span>
         {{ getStatusInfo(user.status).label }}

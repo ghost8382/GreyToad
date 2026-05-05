@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface TimeEntryRepository extends JpaRepository<TimeEntry, UUID> {
     List<TimeEntry> findByTaskIdOrderByDateDesc(UUID taskId);
-    java.util.Optional<TimeEntry> findByTaskIdAndEndedAtIsNull(UUID taskId);
+    java.util.Optional<TimeEntry> findFirstByTaskIdAndEndedAtIsNull(UUID taskId);
 
     @Query("SELECT COALESCE(SUM(t.minutes), 0) FROM TimeEntry t WHERE t.task.id = :taskId")
     int sumMinutesByTaskId(UUID taskId);

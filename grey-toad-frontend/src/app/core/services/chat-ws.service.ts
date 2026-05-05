@@ -3,7 +3,7 @@ import { Client, IMessage } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Message, DirectMessage, AppNotification, Task } from '../../shared/models';
+import { Message, DirectMessage, AppNotification, Task, Comment } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class ChatWsService {
@@ -26,6 +26,15 @@ export class ChatWsService {
   taskUpdate$ = this.taskUpdateSubject.asObservable();
   private activeTaskProjectId?: string;
   private stompTaskSub?: { unsubscribe: () => void };
+
+  private commentSubject = new Subject<Comment>();
+  commentUpdate$ = this.commentSubject.asObservable();
+  private activeCommentTaskId?: string;
+  private stompCommentSub?: { unsubscribe: () => void };
+
+  private presenceSubject = new Subject<{ userId: string; isOnline: boolean }>();
+  presenceUpdate$ = this.presenceSubject.asObservable();
+  private stompPresenceSub?: { unsubscribe: () => void };
 
   // Active subscriptions — restored automatically on reconnect
   private activeChannelId?: string;
@@ -82,6 +91,16 @@ export class ChatWsService {
         this.taskUpdateSubject.next(JSON.parse(msg.body) as Task);
       });
     }
+    if (this.activeCommentTaskId) {
+      this.stompCommentSub?.unsubscribe();
+      this.stompCommentSub = this.client.subscribe(`/topic/task/${this.activeCommentTaskId}/comments`, (msg: IMessage) => {
+        this.commentSubject.next(JSON.parse(msg.body) as Comment);
+      });
+    }
+    this.stompPresenceSub?.unsubscribe();
+    this.stompPresenceSub = this.client.subscribe('/topic/presence', (msg: IMessage) => {
+      this.presenceSubject.next(JSON.parse(msg.body) as { userId: string; isOnline: boolean });
+    });
   }
 
   subscribeToChannel(channelId: string) {
@@ -127,6 +146,21 @@ export class ChatWsService {
     this.activeTaskProjectId = undefined;
     this.stompTaskSub?.unsubscribe();
     this.stompTaskSub = undefined;
+  }
+
+  subscribeToTaskComments(taskId: string) {
+    this.activeCommentTaskId = taskId;
+    if (!this.client?.connected) return;
+    this.stompCommentSub?.unsubscribe();
+    this.stompCommentSub = this.client.subscribe(`/topic/task/${taskId}/comments`, (msg: IMessage) => {
+      this.commentSubject.next(JSON.parse(msg.body) as Comment);
+    });
+  }
+
+  unsubscribeFromTaskComments() {
+    this.activeCommentTaskId = undefined;
+    this.stompCommentSub?.unsubscribe();
+    this.stompCommentSub = undefined;
   }
 
   sendChannelMessage(channelId: string, content: string) {

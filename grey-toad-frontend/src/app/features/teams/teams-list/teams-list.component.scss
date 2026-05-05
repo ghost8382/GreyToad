@@ -20,7 +20,27 @@
   &.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
 }
 
-.team-project { margin-top: -4px; }
+.project-section { margin-bottom: 32px; }
+
+.project-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.project-divider-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.project-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
 
 .teams-grid {
   display: grid;

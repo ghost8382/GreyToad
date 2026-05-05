@@ -7,7 +7,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { ChatWsService } from '../../core/services/chat-ws.service';
 import { ProjectContextService } from '../../core/services/project-context.service';
 import { DmUnreadService } from '../../core/services/dm-unread.service';
-import { TaskService } from '../../core/services/api.service';
+import { TaskService, NotificationApiService, DirectMessageService } from '../../core/services/api.service';
+import { PresenceService } from '../../core/services/presence.service';
 import { User, USER_STATUSES, AppNotification, Project, Task } from '../../shared/models';
 
 @Component({
@@ -65,7 +66,10 @@ export class ShellComponent implements OnInit, OnDestroy {
     private ws: ChatWsService,
     public projectContext: ProjectContextService,
     public dmUnreadSvc: DmUnreadService,
-    private taskService: TaskService
+    private taskService: TaskService,
+    private presenceService: PresenceService,
+    private notificationApi: NotificationApiService,
+    private directMessageService: DirectMessageService
   ) {}
 
   ngOnInit() {
@@ -93,10 +97,31 @@ export class ShellComponent implements OnInit, OnDestroy {
 
     setTimeout(() => {
       this.ws.connect();
+      this.presenceService.start();
+
+      // Seed DM unread badge from DB so offline-received DMs show on the nav tab
+      this.directMessageService.getUnreadCounts().subscribe(counts => {
+        this.dmUnreadSvc.seed(counts);
+        if (!this.activeRoute.startsWith('/messages')) {
+          this.dmUnreadCount = Object.values(counts).reduce((s, v) => s + v, 0);
+        }
+      });
+
+      // Load notifications persisted while offline
+      this.notificationApi.getMine().subscribe(persisted => {
+        this.taskNotifications = [...persisted];
+        // After loading, populate cross-project badges (excluding selected project)
+        this.rebuildProjectUnread();
+      });
+
+      // Recalculate cross-project badges when selected project changes
+      this.subs.push(this.projectContext.selected$.subscribe(() => this.rebuildProjectUnread()));
+
       this.subs.push(this.ws.notification$.subscribe(n => {
-        if (n.type === 'TASK_ASSIGNED') {
+        if (n.type === 'TASK_ASSIGNED' || n.type === 'MENTION') {
           this.taskNotifications.unshift(n);
-          if (n.projectId) {
+          // Only badge other projects — current project notifications go to bell only
+          if (n.projectId && n.projectId !== this.projectContext.selected?.id) {
             this.projectUnread = {
               ...this.projectUnread,
               [n.projectId]: (this.projectUnread[n.projectId] || 0) + 1
@@ -129,6 +154,7 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subs.forEach(s => s.unsubscribe());
+    this.presenceService.stop();
   }
 
   get bellCount()           { return this.taskNotifications.length; }
@@ -140,8 +166,15 @@ export class ShellComponent implements OnInit, OnDestroy {
   toggleBell() { this.bellOpen = !this.bellOpen; }
 
   clearNotifications() {
+    this.notificationApi.markAllRead().subscribe();
     this.taskNotifications = [];
     this.bellOpen = false;
+  }
+
+  dismissNotification(i: number) {
+    const n = this.taskNotifications[i];
+    if (n?.id) this.notificationApi.markOneRead(n.id).subscribe();
+    this.taskNotifications = this.taskNotifications.filter((_, idx) => idx !== i);
   }
 
   toggleTheme() {
@@ -168,6 +201,21 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   getProjectUnread(projectId: string): number { return this.projectUnread[projectId] || 0; }
+
+  private rebuildProjectUnread() {
+    const selectedId = this.projectContext.selected?.id;
+    const unread: Record<string, number> = {};
+    for (const n of this.taskNotifications) {
+      if (n.projectId && n.projectId !== selectedId) {
+        unread[n.projectId] = (unread[n.projectId] || 0) + 1;
+      }
+    }
+    // Preserve live WS cross-project unreads (CHANNEL_MESSAGE from other projects)
+    for (const [pid, count] of Object.entries(this.projectUnread)) {
+      if (pid !== selectedId && !unread[pid]) unread[pid] = count;
+    }
+    this.projectUnread = unread;
+  }
 
   projectColorClass(name?: string): string {
     if (!name) return 'pc-0';
@@ -229,5 +277,11 @@ export class ShellComponent implements OnInit, OnDestroy {
   get roleLabel() {
     const labels: Record<string, string> = { ADMIN: 'Administrator', LEADER: 'Leader', USER: 'Worker' };
     return labels[this.user?.role || ''] || '';
+  }
+
+  get profileLabel() {
+    const perm = this.roleLabel;
+    const job = this.user?.jobTitle;
+    return job ? `${job} · ${perm}` : perm;
   }
 }

@@ -39,16 +39,19 @@ public class MessageReactionService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        var existing = reactionRepository.findByMessageIdAndUserIdAndEmoji(messageId, user.getId(), emoji);
+        var existing = reactionRepository.findByMessageIdAndUserId(messageId, user.getId());
         if (existing.isPresent()) {
             reactionRepository.delete(existing.get());
-        } else {
-            MessageReaction reaction = new MessageReaction();
-            reaction.setMessage(message);
-            reaction.setUser(user);
-            reaction.setEmoji(emoji);
-            reactionRepository.save(reaction);
+            // Same emoji → toggle off; different emoji → switch (add below)
+            if (existing.get().getEmoji().equals(emoji)) {
+                return getForMessage(messageId, user.getEmail());
+            }
         }
+        MessageReaction reaction = new MessageReaction();
+        reaction.setMessage(message);
+        reaction.setUser(user);
+        reaction.setEmoji(emoji);
+        reactionRepository.save(reaction);
 
         return getForMessage(messageId, user.getEmail());
     }
@@ -70,6 +73,7 @@ public class MessageReactionService {
                         .count(e.getValue().size())
                         .reactedByMe(currentUserId != null &&
                                 e.getValue().stream().anyMatch(r -> r.getUser().getId().equals(currentUserId)))
+                        .reactors(e.getValue().stream().map(r -> r.getUser().getUsername()).toList())
                         .build())
                 .toList();
     }
