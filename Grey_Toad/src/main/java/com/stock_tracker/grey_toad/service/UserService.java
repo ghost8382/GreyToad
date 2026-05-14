@@ -1,5 +1,6 @@
 package com.stock_tracker.grey_toad.service;
 
+import com.stock_tracker.grey_toad.data.TeamMemberRepository;
 import com.stock_tracker.grey_toad.data.UserRepository;
 import com.stock_tracker.grey_toad.dto.UpdateProfileRequest;
 import com.stock_tracker.grey_toad.dto.UserResponse;
@@ -17,11 +18,14 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final TeamMemberRepository teamMemberRepository;
     private final PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository,
+                       TeamMemberRepository teamMemberRepository,
                        PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.teamMemberRepository = teamMemberRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -72,6 +76,7 @@ public class UserService {
         if (target.isHeadAdmin()) {
             throw new com.stock_tracker.grey_toad.exceptions.ForbiddenException("Cannot delete the Head Admin account");
         }
+        teamMemberRepository.deleteByUserId(id);
         userRepository.softDeleteById(id);
     }
 

@@ -2,12 +2,14 @@ package com.stock_tracker.grey_toad.service;
 
 import com.stock_tracker.grey_toad.data.ChannelRepository;
 import com.stock_tracker.grey_toad.data.ProjectRepository;
+import com.stock_tracker.grey_toad.data.TeamMemberRepository;
 import com.stock_tracker.grey_toad.data.TeamRepository;
 import com.stock_tracker.grey_toad.data.UserRepository;
 import com.stock_tracker.grey_toad.dto.CreateProjectRequest;
 import com.stock_tracker.grey_toad.dto.ProjectResponse;
 import com.stock_tracker.grey_toad.entity.Project;
 import com.stock_tracker.grey_toad.entity.User;
+import com.stock_tracker.grey_toad.exceptions.BadRequestException;
 import com.stock_tracker.grey_toad.exceptions.ForbiddenException;
 import com.stock_tracker.grey_toad.exceptions.NotFoundException;
 import com.stock_tracker.grey_toad.exceptions.UnauthorizedException;
@@ -23,20 +25,42 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
+    private final TeamMemberRepository teamMemberRepository;
     private final ChannelRepository channelRepository;
 
     public ProjectService(ProjectRepository projectRepository,
                           UserRepository userRepository,
                           TeamRepository teamRepository,
+                          TeamMemberRepository teamMemberRepository,
                           ChannelRepository channelRepository) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
+        this.teamMemberRepository = teamMemberRepository;
         this.channelRepository = channelRepository;
     }
 
     public ProjectResponse create(CreateProjectRequest request, String userEmail) {
-        requireAdmin(userEmail);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        if (request.getTeamId() != null && !request.getTeamId().isBlank()) {
+            UUID teamId;
+            try {
+                teamId = UUID.fromString(request.getTeamId());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid team ID format");
+            }
+            teamRepository.findById(teamId)
+                    .orElseThrow(() -> new NotFoundException("Team not found"));
+            if (!teamMemberRepository.existsByUserIdAndTeamId(user.getId(), teamId)) {
+                throw new ForbiddenException("You are not a member of this team");
+            }
+        }
+
+        if (!"ADMIN".equals(user.getRole())) {
+            throw new ForbiddenException("Only administrators can perform this action");
+        }
 
         Project project = new Project();
         project.setName(request.getName());

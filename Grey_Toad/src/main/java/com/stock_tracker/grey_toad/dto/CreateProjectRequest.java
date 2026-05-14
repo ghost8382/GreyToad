@@ -10,4 +10,6 @@ public class CreateProjectRequest {
 
     @NotBlank
     private String name;
+
+    private String teamId;
 }

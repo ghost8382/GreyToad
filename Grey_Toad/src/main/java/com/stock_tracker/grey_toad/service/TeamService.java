@@ -89,9 +89,10 @@ public class TeamService {
     public List<TeamResponse> getMyTeams(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-        return teamMemberRepository.findByUserId(user.getId())
+        List<java.util.UUID> teamIds = teamMemberRepository.findTeamIdsByUserId(user.getId());
+        return teamRepository.findAllById(teamIds)
                 .stream()
-                .map(m -> mapToResponse(m.getTeam()))
+                .map(this::mapToResponse)
                 .toList();
     }
 
